@@ -18,7 +18,11 @@ PanelWindow {
         bottom: true
     }
 
-    WlrLayershell.layer: WlrLayer.Background
+    readonly property bool orbitActive: effectiveWallpaper === fallbackDir + "/Orbit.png"
+        && !!GlobalStates.wallpaperManager?.orbitAccent
+
+    WlrLayershell.layer: orbitActive ? WlrLayer.Bottom : WlrLayer.Background
+    mask: Region { width: wallpaper.orbitActive ? 0 : wallpaper.width; height: wallpaper.height }
     WlrLayershell.namespace: "rebos_shell:wallpaper"
     exclusionMode: ExclusionMode.Ignore
 
@@ -65,19 +69,22 @@ PanelWindow {
         id: orbitAppearance
         command: ["qs", "ipc", "-p", Quickshell.env("HOME") + "/.config/enclosure/orbit-wallpaper",
             "call", "settings", "appearance", "{}"]
-        stdout: StdioCollector { id: orbitResponse }
-        onExited: code => {
-            let accent = "";
-            if (code === 0 && wallpaper.orbitSelected) {
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (!wallpaper.orbitSelected || !text.trim())
+                    return;
                 try {
-                    const color = JSON.parse(orbitResponse.text).accent;
+                    const color = JSON.parse(text).accent;
                     if (typeof color === "string" && /^#[0-9a-f]{6}$/i.test(color))
-                        accent = color.toLowerCase();
+                        wallpaper.orbitAccent = color.toLowerCase();
                 } catch (error) {
                     console.warn("Could not read Orbit wallpaper accent:", error);
                 }
             }
-            wallpaper.orbitAccent = accent;
+        }
+        onExited: code => {
+            if (code !== 0)
+                wallpaper.orbitAccent = "";
         }
     }
 
@@ -154,7 +161,9 @@ PanelWindow {
     // beneath the wallpaper content and is never visible.
     ScreencopyView {
         id: lockPrepCapture
-        anchors.fill: parent
+        width: parent.width
+        height: parent.height
+        x: -width
         z: -1
         captureSource: wallpaper.screen
         live: false
@@ -1537,6 +1546,7 @@ PanelWindow {
 
     Rectangle {
         id: background
+        visible: !wallpaper.orbitActive
         anchors.fill: parent
         color: "black"
         focus: true
