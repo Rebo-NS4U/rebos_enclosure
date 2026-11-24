@@ -31,7 +31,7 @@ StyledRect {
         variant: "bg"
         backgroundOpacity: BarAppearance.panelOpacity(false)
         radius: Styling.radius(0)
-        border.width: BarAppearance.bordered ? 1 : 0
+        border.width: BarAppearance.borderWidth
         border.color: BarAppearance.panelBorder(false)
         StyledRect {
             anchors.fill: parent

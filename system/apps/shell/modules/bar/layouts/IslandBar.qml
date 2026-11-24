@@ -746,7 +746,7 @@ Item {
                 color: "transparent"
                 bottomLeftRadius: islandBody.bottomLeftRadius
                 bottomRightRadius: islandBody.bottomRightRadius
-                border.width: root.currentMode === "typing" || BarAppearance.framed ? 1 : 0
+                border.width: Math.max(BarAppearance.borderWidth, root.currentMode === "typing" ? 1 : 0)
                 border.color: root.currentMode === "typing" ? Qt.alpha(Colors.primary, 0.28) : BarAppearance.panelBorder(root.isExpanded)
             }
 

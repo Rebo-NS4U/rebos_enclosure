@@ -25,6 +25,7 @@ Singleton {
     readonly property bool instrument: Styling.shellStyle === "instrument"
     readonly property bool themedCorners: instrument || Styling.shellStyle === "frosted"
     readonly property bool framed: bordered
+    readonly property int borderWidth: bordered ? 2 : 0
     readonly property color activeWorkspaceOutline: bordered ? Colors.primary : foregroundColor
     // Keep saved glass/classic values compatible with Bordered/Plain.
     readonly property bool bordered: (Config.bar?.islandAppearance ?? BarDefaults.data.islandAppearance) === "glass"
