@@ -36,6 +36,19 @@ PanelWindow {
     property int currentIndex: 0
     property string currentWallpaper: initialLoadCompleted && wallpaperPaths.length > 0 ? wallpaperPaths[currentIndex] : ""
     readonly property string orbitPath: fallbackDir + "/Orbit.png"
+    readonly property string orbitImageUrl: "file://" + orbitPath.split("/").map(encodeURIComponent).join("/")
+        + "?v=" + orbitImageRevision
+    property int orbitImageRevision: 0
+
+    FileView {
+        path: wallpaper.orbitPath
+        watchChanges: true
+        printErrors: false
+        onFileChanged: {
+            wallpaper.orbitImageRevision++;
+            reload();
+        }
+    }
     readonly property string nightRailPath: fallbackDir + "/Night Rail.png"
     readonly property string paletteWallpaper: orbitSelected ? orbitPath : currentWallpaper
     readonly property var pickedAccentColors: wallpaperAdapter.wallpaperAccentColors[paletteWallpaper] || ["", ""]
@@ -1759,7 +1772,8 @@ PanelWindow {
                     mipmap: true
                     id: rawImage
                     anchors.fill: parent
-                    source: parent.sourceFile ? "file://" + parent.sourceFile : ""
+                    source: parent.sourceFile === wallpaper.orbitPath ? wallpaper.orbitImageUrl
+                        : parent.sourceFile ? "file://" + parent.sourceFile : ""
                     autoTransform: true
                     fillMode: wallpaper.wallpaperFillMode
                     asynchronous: true

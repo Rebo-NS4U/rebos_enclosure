@@ -73,6 +73,9 @@ GridView {
                 clip: true
                 sourceSize: Qt.size(Math.max(1, tile.width), Math.max(1, tile.height))
                 source: {
+                    const manager = gallery.manager;
+                    if (manager?.orbitPath === tile.modelData)
+                        return manager.orbitImageUrl;
                     const path = tile.useThumbnail ? gallery.manager?.getThumbnailPath(tile.modelData) : tile.modelData;
                     if (!path) return "";
                     const url = "file://" + path.split("/").map(encodeURIComponent).join("/");

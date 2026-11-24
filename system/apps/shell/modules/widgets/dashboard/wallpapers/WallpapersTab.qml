@@ -1020,6 +1020,9 @@ FocusScope {
                 if (!parent.sourceFile || !GlobalStates.wallpaperManager)
                     return "";
 
+                if (parent.sourceFile === GlobalStates.wallpaperManager.orbitPath)
+                    return GlobalStates.wallpaperManager.orbitImageUrl;
+
                 // Usar SOLAMENTE thumbnail, nunca el original (muy pesado)
                 var thumbnailPath = GlobalStates.wallpaperManager.getThumbnailPath(parent.sourceFile);
                 var version = GlobalStates.wallpaperManager.thumbnailsVersion;

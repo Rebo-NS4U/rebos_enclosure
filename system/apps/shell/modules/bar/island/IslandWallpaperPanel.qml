@@ -427,6 +427,8 @@ Item {
                             sourceSize.height: wallGrid.itemH
                             source: {
                                 if (!GlobalStates.wallpaperManager) return "";
+                                if (delegateItem.modelData === GlobalStates.wallpaperManager.orbitPath)
+                                    return GlobalStates.wallpaperManager.orbitImageUrl;
                                 const thumb = GlobalStates.wallpaperManager.getThumbnailPath(delegateItem.modelData);
                                 const ver = GlobalStates.wallpaperManager.thumbnailsVersion;
                                 return "file://" + thumb + "?v=" + ver;
