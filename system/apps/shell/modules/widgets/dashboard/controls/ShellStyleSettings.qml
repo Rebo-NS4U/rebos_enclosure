@@ -42,7 +42,7 @@ SettingsGroup {
     FinishPicker {
         label: "Button finish"
         setting: "buttonFinish"
-        options: [{value: "default", label: "Theme default"}, {value: "grip", label: "Grip ridges"}, {value: "rivets", label: "Corner rivets"}]
+        options: [{value: "default", label: "Theme default"}, {value: "grip", label: "Inset"}, {value: "rivets", label: "Hardware"}]
     }
 
     FinishPicker {
