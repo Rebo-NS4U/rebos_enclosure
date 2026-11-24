@@ -9,6 +9,7 @@ SettingsGroup {
     title: "Wallpaper"
     property string settingsAnchor: "wallpaper"
     readonly property var manager: GlobalStates.wallpaperManager
+    readonly property var regularPaths: (manager?.wallpaperPaths ?? []).filter(path => path !== manager?.orbitPath)
 
     WallpaperGallery {
         id: gallery
@@ -16,7 +17,8 @@ SettingsGroup {
         screenName: root.Window.window?.screen?.name ?? ""
         Layout.fillWidth: true
         Layout.preferredHeight: Math.min(440, Math.ceil(count / columns) * cellHeight)
-        visible: (root.manager?.wallpaperPaths.length ?? 0) > 0
+        visible: root.regularPaths.length > 0
+        model: visible ? root.regularPaths : []
     }
     StyledText {
         visible: !gallery.visible

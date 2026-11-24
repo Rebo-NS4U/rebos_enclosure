@@ -245,6 +245,42 @@ console.log('Per-wallpaper choices and reset verified');
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
+    def test_orbit_toggle_restores_global_and_monitor_wallpapers(self):
+        source = SHELL / 'modules/widgets/dashboard/wallpapers/Wallpaper.qml'
+        code = r"""
+const fs = require('fs'), assert = require('assert');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const start = source.indexOf('    function setOrbitEnabled(');
+const end = source.indexOf('    onOrbitSelectedChanged:', start);
+const orbitPath = '/wallpapers/Orbit.png';
+const regularPath = '/wallpapers/first.png';
+const wallpaperPaths = [orbitPath, regularPath, '/wallpapers/second.png'];
+let currentWallpaper = regularPath, currentIndex = 1, orbitSelected = false;
+let wallpaperAdapter = {
+    currentWall: regularPath, perScreenWallpapers: {external: wallpaperPaths[2]}, regularWallpapers: null
+};
+eval(source.slice(start, end));
+
+setOrbitEnabled(true);
+assert.strictEqual(currentWallpaper, orbitPath);
+assert.deepStrictEqual(wallpaperAdapter.perScreenWallpapers, {});
+wallpaperAdapter = JSON.parse(JSON.stringify(wallpaperAdapter));
+orbitSelected = true;
+setOrbitEnabled(false);
+assert.strictEqual(currentWallpaper, regularPath);
+assert.strictEqual(currentIndex, 1);
+assert.deepStrictEqual(wallpaperAdapter.perScreenWallpapers, {external: wallpaperPaths[2]});
+assert.strictEqual(wallpaperAdapter.regularWallpapers, null);
+
+wallpaperAdapter.currentWall = orbitPath;
+wallpaperAdapter.perScreenWallpapers = {external: wallpaperPaths[2], internal: orbitPath};
+setOrbitEnabled(false);
+assert.strictEqual(currentWallpaper, regularPath);
+assert.deepStrictEqual(wallpaperAdapter.perScreenWallpapers, {external: wallpaperPaths[2]});
+"""
+        result = subprocess.run(['node', '-e', code, str(source)], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_orbit_palette_honors_each_pick_and_restores_live_defaults(self):
         source = SHELL / 'modules/widgets/dashboard/wallpapers/Wallpaper.qml'
         code = r"""

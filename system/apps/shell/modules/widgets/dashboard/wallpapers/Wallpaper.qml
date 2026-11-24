@@ -52,6 +52,35 @@ PanelWindow {
             (perScreenWallpapers[output.name] || wallpaperAdapter.currentWall) === orbitPath);
     }
 
+    function setOrbitEnabled(enabled) {
+        if (enabled === orbitSelected)
+            return;
+
+        const adapter = wallpaperAdapter;
+        if (enabled) {
+            adapter.regularWallpapers = {
+                current: adapter.currentWall || currentWallpaper,
+                perScreen: adapter.perScreenWallpapers
+            };
+            adapter.perScreenWallpapers = {};
+            adapter.currentWall = orbitPath;
+        } else {
+            const saved = adapter.regularWallpapers;
+            const perScreen = Object.assign({}, saved?.perScreen ?? adapter.perScreenWallpapers);
+            for (const screenName of Object.keys(perScreen)) {
+                if (perScreen[screenName] === orbitPath)
+                    delete perScreen[screenName];
+            }
+            const regular = saved?.current ?? adapter.currentWall;
+            adapter.currentWall = regular && regular !== orbitPath ? regular
+                : wallpaperPaths.find(path => path !== orbitPath) || "";
+            adapter.perScreenWallpapers = perScreen;
+            adapter.regularWallpapers = null;
+        }
+        currentIndex = Math.max(0, wallpaperPaths.indexOf(adapter.currentWall));
+        currentWallpaper = adapter.currentWall;
+    }
+
     onOrbitSelectedChanged: {
         if (!orbitSelected)
             orbitAccent = "";
@@ -113,7 +142,8 @@ PanelWindow {
         wallpaperConfig.adapter.wallPath = directory;
     }
     property var perScreenWallpapers: wallpaperConfig.adapter.perScreenWallpapers || {}
-    property string effectiveWallpaper: perScreenWallpapers[currentScreenName] || currentWallpaper
+    property string effectiveWallpaper: perScreenWallpapers[currentScreenName]
+        || (wallpaperAdapter.currentWall === orbitPath ? orbitPath : currentWallpaper)
     readonly property string renderedWallpaper: DitheredWallpapers.source(effectiveWallpaper)
 
     function requestDitheredWallpapers(): void {
@@ -580,6 +610,9 @@ PanelWindow {
             return;
         }
 
+        if (wallpaperAdapter.regularWallpapers && path !== orbitPath)
+            setOrbitEnabled(false);
+
         console.log("setWallpaper called with:", path, "for screen:", targetScreen);
         initialLoadCompleted = true;
         var pathIndex = wallpaperPaths.indexOf(path);
@@ -662,12 +695,7 @@ PanelWindow {
 
         if (wallpaperPaths.length === 0)
             return;
-        initialLoadCompleted = true;
-        currentIndex = (currentIndex + 1) % wallpaperPaths.length;
-        currentWallpaper = wallpaperPaths[currentIndex];
-        wallpaperConfig.adapter.currentWall = wallpaperPaths[currentIndex];
-        runMatugenForCurrentWallpaper();
-        generateLockscreenFrame(wallpaperPaths[currentIndex]);
+        setWallpaper(wallpaperPaths[(currentIndex + 1) % wallpaperPaths.length]);
     }
 
     function previousWallpaper() {
@@ -678,12 +706,7 @@ PanelWindow {
 
         if (wallpaperPaths.length === 0)
             return;
-        initialLoadCompleted = true;
-        currentIndex = currentIndex === 0 ? wallpaperPaths.length - 1 : currentIndex - 1;
-        currentWallpaper = wallpaperPaths[currentIndex];
-        wallpaperConfig.adapter.currentWall = wallpaperPaths[currentIndex];
-        runMatugenForCurrentWallpaper();
-        generateLockscreenFrame(wallpaperPaths[currentIndex]);
+        setWallpaper(wallpaperPaths[currentIndex === 0 ? wallpaperPaths.length - 1 : currentIndex - 1]);
     }
 
     function setWallpaperByIndex(index) {
@@ -692,14 +715,8 @@ PanelWindow {
             return;
         }
 
-        if (index >= 0 && index < wallpaperPaths.length) {
-            initialLoadCompleted = true;
-            currentIndex = index;
-            currentWallpaper = wallpaperPaths[currentIndex];
-            wallpaperConfig.adapter.currentWall = wallpaperPaths[currentIndex];
-            runMatugenForCurrentWallpaper();
-            generateLockscreenFrame(wallpaperPaths[currentIndex]);
-        }
+        if (index >= 0 && index < wallpaperPaths.length)
+            setWallpaper(wallpaperPaths[index]);
     }
 
     // Re-run matugen for the current wallpaper with a Material scheme type.
@@ -1046,6 +1063,7 @@ PanelWindow {
         // QUICKSHELL-GIT: path: Quickshell.cachePath("wallpapers.json")
         path: Quickshell.env("HOME") + "/.cache/rebos_shell/wallpapers.json"
         watchChanges: true
+        atomicWrites: true
 
         onLoaded: {
             if (!wallpaperConfig.adapter.wallPath) {
@@ -1081,6 +1099,7 @@ PanelWindow {
             property bool tintEnabled: false
             property string wallpaperMode: "auto"
             property var perScreenWallpapers: ({})
+            property var regularWallpapers: null
 
             onActiveColorPresetChanged: {
                 if (wallpaperConfig.adapter.activeColorPreset !== wallpaper.activeColorPreset) {
@@ -1103,6 +1122,7 @@ PanelWindow {
                     var pathIndex = wallpaper.wallpaperPaths.indexOf(currentWall);
                     if (pathIndex !== -1) {
                         wallpaper.currentIndex = pathIndex;
+                        wallpaper.currentWallpaper = currentWall;
                         if (!wallpaper.initialLoadCompleted) {
                             wallpaper.initialLoadCompleted = true;
                         }
@@ -1429,7 +1449,7 @@ PanelWindow {
 
                             if (!initialLoadCompleted) {
                                 if (!wallpaperConfig.adapter.currentWall) {
-                                    wallpaperConfig.adapter.currentWall = wallpaperPaths[0];
+                                    wallpaperConfig.adapter.currentWall = wallpaperPaths.find(path => path !== orbitPath) || "";
                                 }
                                 initialLoadCompleted = true;
                                 // runMatugenForCurrentWallpaper() will be called by onCurrentWallChanged
@@ -1486,7 +1506,7 @@ PanelWindow {
 
                         if (!initialLoadCompleted) {
                             if (!wallpaperConfig.adapter.currentWall) {
-                                wallpaperConfig.adapter.currentWall = wallpaperPaths[0];
+                                wallpaperConfig.adapter.currentWall = wallpaperPaths.find(path => path !== orbitPath) || "";
                             }
                             initialLoadCompleted = true;
                             // runMatugenForCurrentWallpaper() will be called by onCurrentWallChanged

@@ -201,11 +201,13 @@ Item {
                         columnSpacing: Styling.spacing(12)
                         rowSpacing: Styling.spacing(12)
                     WallpaperSettings {
-                        visible: !root.tabbedNavigation || root.navigationTab === "wallpaper"
+                        visible: (!root.tabbedNavigation || root.navigationTab === "wallpaper")
+                            && !(GlobalStates.wallpaperManager?.orbitSelected ?? false)
                         collapsible: !root.tabbedNavigation
                     }
                     OrbitWallpaperSettings {
-                        visible: !root.tabbedNavigation || root.navigationTab === "wallpaper"
+                        visible: (!root.tabbedNavigation || root.navigationTab === "wallpaper")
+                            && (GlobalStates.wallpaperManager?.orbitSelected ?? false)
                         collapsible: !root.tabbedNavigation
                     }
                     PaletteSettings {

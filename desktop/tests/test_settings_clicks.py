@@ -27,6 +27,13 @@ ShellRoot {
    anchors.fill: parent
    TestCase { id: tester; when: false }
    property int clicks: 0
+   QtObject {
+    id: wallpaperManager
+    property bool orbitSelected: false
+    property var wallpaperModes: []
+    property var wallpaperPaths: []
+    function setOrbitEnabled(enabled) { orbitSelected = enabled; }
+   }
    ColumnLayout {
     id: samples; width: 300
     SettingsToggleRow { id: sharedToggle; label: "Shared toggle"; checked: true; onToggled: value => checked = value }
@@ -397,10 +404,19 @@ ShellRoot {
       settings.searchQuery = "";
       tester.wait(50);
       fixture.check(settings.currentSection === 4 && settings.selectedIndex === 0 && settings.filteredSections.length === 4, "Clearing search preserves page and category");
+      GlobalStates.wallpaperManager = wallpaperManager;
       settings.searchQuery = "orbit wallpaper";
-      const orbit = fixture.find(loader.item, "orbit-wallpaper-settings");
-      tester.tryVerify(() => loader.item.currentSection === "orbit-wallpaper" &&
-       orbit.visible && orbit.saved?.paper === "#000000", 3000, "Orbit search opens the live wallpaper controls");
+      const weatherGroup = fixture.find(settings, "shell-group-weather");
+      tester.tryVerify(() => settings.currentSection === 6 && weatherGroup?.visible, 3000, "Orbit search opens Weather");
+      const orbit = fixture.find(weatherGroup, "orbit-wallpaper-settings");
+      const regular = fixture.find(weatherGroup, "weather-regular-wallpaper");
+      const orbitToggle = fixture.find(fixture.find(weatherGroup, "weather-live-wallpaper"), "settings-toggle-control");
+      categoryScroller.contentY = Math.max(0, orbitToggle.mapToItem(categoryScroller.contentItem, 0, 0).y - 100);
+      tester.wait(50);
+      fixture.check(regular.visible && !orbit.visible, "Regular mode shows regular controls");
+      tester.mouseClick(orbitToggle);
+      tester.tryVerify(() => wallpaperManager.orbitSelected && orbit.visible &&
+       !regular.visible && orbit.saved?.paper === "#000000", 3000, "Orbit mode shows its accent controls");
       const accent = fixture.find(orbit, "orbit-accent");
       categoryScroller.contentY = Math.max(0, accent.mapToItem(categoryScroller.contentItem, 0, 0).y - 100);
       tester.wait(50);
@@ -412,6 +428,11 @@ ShellRoot {
       picker.close();
       tester.tryVerify(() => orbit.saved?.accent === "#ff69a5", 3000, "Selected accent is saved");
       fixture.check(orbit.saved.paper === "#000000" && orbit.saved.ink === "#f2f2f2", "Other colors are preserved");
+      categoryScroller.contentY = Math.max(0, orbitToggle.mapToItem(categoryScroller.contentItem, 0, 0).y - 100);
+      tester.wait(50);
+      tester.mouseClick(orbitToggle);
+      tester.tryVerify(() => !wallpaperManager.orbitSelected && regular.visible && !orbit.visible,
+       2000, "Turning Orbit off restores the regular controls");
       settings.searchQuery = "";
       settings.width = 850;
       settings.openSection(4, "colors"); tester.wait(150);
@@ -449,7 +470,7 @@ ShellRoot {
       const expectedTabs = [
        {id: "style", anchors: []},
        {id: "colors", anchors: ["colors"]},
-       {id: "wallpaper", anchors: ["wallpaper", "orbit-wallpaper"]},
+       {id: "wallpaper", anchors: ["wallpaper"]},
        {id: "typography", anchors: ["general"]},
        {id: "effects", anchors: ["performance", "motion", "blur", "shadow", "variants", "variants"]},
        {id: "panels", anchors: ["weather", "storage", "bar", "lockscreen", "system", "sidebar"]}
