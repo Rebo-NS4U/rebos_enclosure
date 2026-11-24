@@ -285,7 +285,7 @@ ClippingRectangle {
             objectName: "background-finish"
             opacity: root.rectOpacity
             readonly property bool ruled: Config.theme.backgroundFinish === "ruled"
-            readonly property color ink: Qt.alpha(root.itemColor, ruled ? 0.09 : 0.18)
+            readonly property color ink: Qt.alpha(root.itemColor, ruled ? 0.13 : 0.22)
             onInkChanged: requestPaint()
             onRuledChanged: requestPaint()
             onWidthChanged: requestPaint()
@@ -293,14 +293,25 @@ ClippingRectangle {
             onPaint: {
                 const ctx = getContext("2d");
                 ctx.clearRect(0, 0, width, height);
-                ctx.fillStyle = ink;
-                for (let y = 8; y < height; y += 16) {
-                    if (ruled) {
+                if (ruled) {
+                    const wash = ctx.createLinearGradient(0, 0, width, 0);
+                    wash.addColorStop(0, "transparent");
+                    wash.addColorStop(0.18, ink);
+                    wash.addColorStop(0.82, ink);
+                    wash.addColorStop(1, "transparent");
+                    ctx.fillStyle = wash;
+                    for (let y = 8; y < height - 3; y += 16)
                         ctx.fillRect(0, y, width, 1);
-                    } else {
-                        for (let x = 8; x < width; x += 16)
-                            ctx.fillRect(x, y, 2, 2);
+                } else {
+                    ctx.fillStyle = ink;
+                    ctx.beginPath();
+                    for (let y = 8; y < height - 3; y += 16) {
+                        for (let x = 8; x < width - 3; x += 16) {
+                            ctx.moveTo(x + 1, y);
+                            ctx.arc(x, y, 1, 0, 2 * Math.PI);
+                        }
                     }
+                    ctx.fill();
                 }
             }
         }
@@ -1157,16 +1168,21 @@ ClippingRectangle {
                 model: 4
                 delegate: Rectangle {
                     required property int index
-                    readonly property real inset: Math.min(hardware.width / 5, 6)
+                    readonly property real inset: Math.round(Math.min(hardware.width / 5, hardware.height / 5, 7))
                     readonly property real offset: hardware.rivets ? inset : 0
-                    width: hardware.rivets ? 3 : 1
-                    height: hardware.rivets ? 3 : Math.min(12, hardware.height / 3)
-                    radius: hardware.rivets ? width / 2 : 0
+                    width: hardware.rivets ? 4 : 2
+                    height: hardware.rivets ? width : Math.round(Math.min(12, hardware.height / 3))
+                    radius: width / 2
                     x: (index < 2 ? inset : hardware.width - inset - width)
                         + (hardware.rivets ? 0 : (index % 2) * (index < 2 ? 3 : -3))
                     y: hardware.rivets ? (index % 2 ? hardware.height - offset - height : offset)
                         : (hardware.height - height) / 2
-                    color: Qt.alpha(root.itemColor, root.controlPressed ? 0.85 : 0.48)
+                    gradient: Gradient {
+                        orientation: hardware.rivets ? Gradient.Vertical : Gradient.Horizontal
+                        GradientStop { position: 0; color: Qt.alpha(root.itemColor, root.controlPressed ? 0.95 : 0.72) }
+                        GradientStop { position: 0.48; color: Qt.alpha(root.itemColor, root.controlPressed ? 0.65 : 0.36) }
+                        GradientStop { position: 1; color: Qt.rgba(0, 0, 0, 0.42) }
+                    }
                 }
             }
         }
