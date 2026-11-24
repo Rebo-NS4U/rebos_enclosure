@@ -12,8 +12,8 @@ var data = {
       "id": "deep",
       "name": "dweebo-Deep",
       "model": "gpt-6.2-astra",
-      "effort": "low",
-      "description": "Astra 6.2 · low reasoning. Root-cause debugging, architecture decisions and evidence-based research.",
+      "effort": "medium",
+      "description": "Astra 6.2 · medium reasoning. Root-cause debugging, architecture decisions and evidence-based research.",
       "guidance": "Answer routine questions directly. For root-cause debugging, architecture or research, use @HOME@/code/rebos-assistant/skills/deep-investigation/SKILL.md. Start with the smallest check that distinguishes plausible causes. Reuse verified evidence. Widen the investigation if a material uncertainty remains. Verify the result and report the evidence concisely."
     },
     {

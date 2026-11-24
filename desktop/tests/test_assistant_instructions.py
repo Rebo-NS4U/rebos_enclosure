@@ -67,17 +67,17 @@ ShellRoot {
                 check(session.standingInstructions(role, true)[0].text.includes(roleMarkers[role.id]), role.id + " guidance restored for forced delivery");
             }
             let deep = session.codexPresets.find(item => item.id === "deep");
-            check(deep && deep.model === "gpt-6.2-astra" && deep.effort === "low", "Deep offers Astra 6.2 with low reasoning");
-            session.sessionConfigOptions = [
-                {id: "model", currentValue: deep.model},
-                {id: "reasoning_effort", currentValue: "medium"}
-            ];
-            check(!session.codexPresetMatches(deep), "medium reasoning does not match Deep");
+            check(deep && deep.model === "gpt-6.2-astra" && deep.effort === "medium", "Deep offers Astra 6.2 with medium reasoning");
             session.sessionConfigOptions = [
                 {id: "model", currentValue: deep.model},
                 {id: "reasoning_effort", currentValue: "low"}
             ];
-            check(session.codexPresetMatches(deep), "confirmed low reasoning matches Deep");
+            check(!session.codexPresetMatches(deep), "low reasoning does not match Deep");
+            session.sessionConfigOptions = [
+                {id: "model", currentValue: deep.model},
+                {id: "reasoning_effort", currentValue: "medium"}
+            ];
+            check(session.codexPresetMatches(deep), "confirmed medium reasoning matches Deep");
             let deepGuidance = session.standingInstructions(deep, false)[0].text;
             check(deepGuidance.includes("deep-investigation/SKILL.md") && deepGuidance.includes("smallest check that distinguishes plausible causes") && deepGuidance.includes("symptom, evidence and remaining uncertainty"), "Deep switch carries evidence into investigation");
             let symphony = session.codexPresets.find(item => item.id === "symphony");
