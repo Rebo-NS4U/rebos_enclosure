@@ -204,6 +204,10 @@ Item {
                         visible: !root.tabbedNavigation || root.navigationTab === "wallpaper"
                         collapsible: !root.tabbedNavigation
                     }
+                    OrbitWallpaperSettings {
+                        visible: !root.tabbedNavigation || root.navigationTab === "wallpaper"
+                        collapsible: !root.tabbedNavigation
+                    }
                     PaletteSettings {
                         collapsible: !root.tabbedNavigation
                         onCurrentPageChanged: mainFlickable.contentY = 0

@@ -26,7 +26,7 @@ Item {
     property string appearanceTab: "style"
     function themeTabFor(section, subSection) {
         if (section === 6) return "panels";
-        if (subSection === "wallpaper") return "wallpaper";
+        if (["wallpaper", "orbit-wallpaper"].includes(subSection)) return "wallpaper";
         if (["colors", "palette", "picker", "presets", "apps"].includes(subSection)) return "colors";
         if (subSection === "general") return "typography";
         if (["performance", "motion", "blur", "shadow", "variants"].includes(subSection)) return "effects";

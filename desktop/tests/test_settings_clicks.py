@@ -397,6 +397,18 @@ ShellRoot {
       settings.searchQuery = "";
       tester.wait(50);
       fixture.check(settings.currentSection === 4 && settings.selectedIndex === 0 && settings.filteredSections.length === 4, "Clearing search preserves page and category");
+      settings.searchQuery = "orbit wallpaper";
+      const orbit = fixture.find(loader.item, "orbit-wallpaper-settings");
+      tester.tryVerify(() => loader.item.currentSection === "orbit-wallpaper" &&
+       orbit.visible && orbit.saved?.paper === "#000000", 3000, "Orbit search opens the live wallpaper controls");
+      const nebula = fixture.find(orbit, "orbit-nebula");
+      const orbitPoint = nebula.mapToItem(categoryScroller.contentItem, 0, 0);
+      categoryScroller.contentY = Math.max(0, orbitPoint.y - 100);
+      tester.wait(50);
+      tester.mouseClick(nebula);
+      tester.tryVerify(() => orbit.saved?.paper === "#140d25" &&
+       orbit.saved?.accent === "#ff69a5", 3000, "Nebula applies through the wallpaper settings service");
+      settings.searchQuery = "";
       settings.width = 850;
       settings.openSection(4, "colors"); tester.wait(150);
       fixture.check(!fixture.find(loader.item, "palette-open-palette"), "Color controls have no extra menu");
@@ -433,7 +445,7 @@ ShellRoot {
       const expectedTabs = [
        {id: "style", anchors: []},
        {id: "colors", anchors: ["colors"]},
-       {id: "wallpaper", anchors: ["wallpaper"]},
+       {id: "wallpaper", anchors: ["wallpaper", "orbit-wallpaper"]},
        {id: "typography", anchors: ["general"]},
        {id: "effects", anchors: ["performance", "motion", "blur", "shadow", "variants", "variants"]},
        {id: "panels", anchors: ["weather", "storage", "bar", "lockscreen", "system", "sidebar"]}
@@ -565,7 +577,26 @@ class SettingsClickTests(unittest.TestCase):
                 env.pop(key, None)
             for key in ('XDG_CONFIG_HOME', 'XDG_CACHE_HOME', 'XDG_DATA_HOME', 'XDG_STATE_HOME'):
                 env[key] = str(root / key)
-            result = subprocess.run(['qs', '-p', temporary, '--no-color'], env=env,
+            # Isolate wallpaper IPC from any desktop session running the test.
+            mock_bin = root / 'bin'
+            mock_bin.mkdir()
+            mock_qs = mock_bin / 'qs'
+            mock_qs.write_text(
+                '#!/usr/bin/env python3\n'
+                'import json, sys\n'
+                'from pathlib import Path\n'
+                'state = Path("orbit-appearance.json")\n'
+                'values = json.loads(state.read_text()) if state.exists() else dict(\n'
+                '    paper="#000000", ink="#f2f2f2", accent="#d71921",\n'
+                '    orbitSpeed=1, starCount=560, showLabels=True)\n'
+                'assert sys.argv[1:3] == ["ipc", "-p"]\n'
+                'assert sys.argv[4:7] == ["call", "settings", "appearance"]\n'
+                'values.update(json.loads(sys.argv[7]))\n'
+                'state.write_text(json.dumps(values))\n'
+                'print(json.dumps(values))\n')
+            mock_qs.chmod(0o755)
+            env['PATH'] = str(mock_bin) + os.pathsep + env['PATH']
+            result = subprocess.run([shutil.which('qs'), '-p', temporary, '--no-color'], env=env,
                                     capture_output=True, text=True, timeout=25, cwd=root)
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output)
