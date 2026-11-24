@@ -32,9 +32,13 @@ Button {
             : (root.hardware || root.orbital) && root.down ? "internalbg"
             : root.hovered || root.down ? "focus" : "common"
         radius: root.glyphStyle ? Math.min(5, Styling.radius(-4)) : Styling.radius(-4)
-        border.width: root.activeFocus ? 2 : 1
-        border.color: root.activeFocus ? (root.danger || root.engaged ? itemColor : Colors.primary)
-            : root.hardware || root.glyphStyle || root.orbital ? Config.resolveColor(borderData?.[0] ?? "transparent")
+        border.width: (root.orbital ? root.visualFocus : root.activeFocus) ? 2 : 1
+        border.color: root.orbital && !root.visualFocus
+            ? (root.engaged || root.danger && (root.hovered || root.down) ? Qt.alpha(itemColor, root.down ? 0.7 : root.hovered ? 0.48 : 0.24)
+                : root.down || root.hovered ? Qt.alpha(Colors.primary, root.down ? 0.82 : 0.62)
+                : Qt.alpha(Colors.outline, 0.36))
+            : root.activeFocus ? (root.danger || root.engaged ? itemColor : Colors.primary)
+            : root.hardware || root.glyphStyle ? Config.resolveColor(borderData?.[0] ?? "transparent")
             : Qt.alpha(Colors.outline, 0.3)
     }
     contentItem: RowLayout {

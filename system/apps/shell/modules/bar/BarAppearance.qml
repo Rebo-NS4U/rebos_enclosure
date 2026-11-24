@@ -46,9 +46,6 @@ Singleton {
     function panelBorder(expanded: bool): color {
         return bordered ? Qt.alpha(highlightColor, 0.5) : "transparent";
     }
-    function controlOutline(hovered: bool): color {
-        return hovered ? Qt.alpha(highlightColor, 0.72) : Qt.alpha(foregroundColor, 0.24);
-    }
     function clockTint(hovered: bool): color {
         return "transparent";
     }
