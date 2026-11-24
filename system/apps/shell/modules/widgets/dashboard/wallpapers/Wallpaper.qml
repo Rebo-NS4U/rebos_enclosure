@@ -21,8 +21,8 @@ PanelWindow {
     readonly property bool orbitActive: effectiveWallpaper === orbitPath
         && !!GlobalStates.wallpaperManager?.orbitAccent
 
-    WlrLayershell.layer: orbitActive ? WlrLayer.Bottom : WlrLayer.Background
-    mask: Region { width: wallpaper.orbitActive ? 0 : wallpaper.width; height: wallpaper.height }
+    visible: !orbitActive
+    WlrLayershell.layer: WlrLayer.Background
     WlrLayershell.namespace: "rebos_shell:wallpaper"
     exclusionMode: ExclusionMode.Ignore
 

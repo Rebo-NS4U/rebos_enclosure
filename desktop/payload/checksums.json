@@ -677,7 +677,7 @@
   "system/apps/shell/modules/widgets/dashboard/metrics/WindowDetails.qml": "cc3c679d8fd7c528c5a2fb7f197b3df12d345d78411e56a51298f46e9953f17f",
   "system/apps/shell/modules/widgets/dashboard/wallpapers/MpvShaderGenerator.js": "f86142c8ee69d9b1690048d0e53d1e86da733eaf39446ff864d79e96276cfa1a",
   "system/apps/shell/modules/widgets/dashboard/wallpapers/SchemeSelector.qml": "048106b6dc506cad559dba5ad9d3752b665e1dfb33cabad18424d061dcb293d2",
-  "system/apps/shell/modules/widgets/dashboard/wallpapers/Wallpaper.qml": "c2563d159f678f4ecb8dc78bdcdcade39f618ff03fbc8a3b3d954992da2754aa",
+  "system/apps/shell/modules/widgets/dashboard/wallpapers/Wallpaper.qml": "56d38965b3e6f40f7d702f7842aadf1ab6517470981685692e284387cc1b30a4",
   "system/apps/shell/modules/widgets/dashboard/wallpapers/WallpaperChoice.qml": "c04994beea898f39e7bee2f26da3954aa5184826496e416eea4c4d2b5b2e4bf5",
   "system/apps/shell/modules/widgets/dashboard/wallpapers/WallpaperColorControls.qml": "3bd4248af95cfe1287eb149266343d6467d2ba8dcc76d475e1a2135f998a5111",
   "system/apps/shell/modules/widgets/dashboard/wallpapers/WallpaperColors.js": "49466ded861f322fc33be1e799071d6fb8faa1e993abbd48866df22cf94f5d33",
