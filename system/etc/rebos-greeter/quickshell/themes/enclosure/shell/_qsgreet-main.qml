@@ -59,15 +59,29 @@ FocusScope {
         height: width * 9 / 16
         enabled: false
         active: Config.display.orbitWallpaper === true
-        Component.onCompleted: setSource("file:///usr/local/lib/rebos-greeter/orbit/Orbit.qml", {
-            accent: Qt.binding(() => Config.palette.primary || "#d71921"),
-            showLabels: false,
-            planets: [
-                {desk: 1, slot: 0, windowId: 1},
-                {desk: 2, slot: 1, windowId: 2},
-                {desk: 3, slot: 2, windowId: 3}
-            ]
-        })
+        Component.onCompleted: {
+            const count = 3 + Math.floor(Math.random() * 3);
+            const seed = Math.floor(Math.random() * 0x7fffffff);
+            setSource("file:///usr/local/lib/rebos-greeter/orbit/Orbit.qml", {
+                accent: Qt.binding(() => Config.palette.primary || "#d71921"),
+                showLabels: false,
+                // Orbit uses window IDs as seeds for the procedural terrain.
+                planets: Array.from({length: count}, (_, slot) => ({
+                    desk: slot + 1, slot: slot, windowId: seed + slot
+                }))
+            });
+        }
+        onLoaded: {
+            // Rotate the renderer's spaced-out starting arrangement by a random phase.
+            if (!item.phases)
+                return;
+            const offset = Math.random() * 2 * Math.PI;
+            const phases = {};
+            for (const body of item.planets)
+                phases[body.windowId] = item.phases[body.windowId] + offset;
+            item.phases = phases;
+            item.place();
+        }
     }
     StyledRect {
         id: panel

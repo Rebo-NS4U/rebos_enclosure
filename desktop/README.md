@@ -325,8 +325,9 @@ The appearance exporter and sync units are managed code refreshed by updates; wa
 and color preferences remain preserved. Video wallpapers loop silently at login,
 with a still frame available if video playback fails.
 When the optional Orbit scene is installed under `/usr/local/lib/rebos-greeter/orbit`,
-selecting Orbit uses that scene with sample planets on the login screen. Keep the
-scene and its assets administrator-owned and readable by the greeter.
+selecting Orbit generates three to five planets with fresh terrain and starting
+positions each time the login screen opens. Keep the scene and its assets
+administrator-owned and readable by the greeter.
 Setup disables the legacy `rebos-greeter-sync.path` watcher and stops its service
 before enabling the replacement, so both exporters cannot compete.
 
