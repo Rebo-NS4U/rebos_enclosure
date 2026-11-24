@@ -524,16 +524,27 @@ Item {
                             }
                         }
 
+                        StyledText {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
+                            text: "Control border width"
+                            font.family: Config.theme.font
+                            font.pixelSize: Styling.fontSize(-1)
+                            font.weight: Font.Medium
+                            color: Colors.overSurfaceVariant
+                            Layout.bottomMargin: -4
+                        }
+
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: Styling.spacing(8)
-                            StyledText { text: "Control border width" }
                             StyledSlider {
                                 id: borderSlider
                                 objectName: "control-border-width"
                                 Accessible.name: "Control border width"
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 20
+                                progressColor: Styling.srItem("overprimary")
                                 scroll: false
                                 smoothDrag: false
                                 stepSize: 1 / 6
@@ -549,7 +560,16 @@ Item {
                                         Config.theme.controlBorderWidth = pixels;
                                 }
                             }
-                            StyledText { text: Config.controlBorderWidth + " px" }
+                            StyledText {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                text: Config.controlBorderWidth
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(0)
+                                color: Colors.overBackground
+                                horizontalAlignment: Text.AlignRight
+                                Layout.preferredWidth: 24
+                            }
                         }
 
                     }
