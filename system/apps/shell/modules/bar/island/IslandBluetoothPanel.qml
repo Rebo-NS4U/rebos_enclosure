@@ -121,7 +121,7 @@ Item {
                     radius: height / 2
                     color: BluetoothService.enabled ? Styling.srItem("overprimary") : Colors.surfaceBright
                     border.color: BluetoothService.enabled ? Styling.srItem("overprimary") : Colors.outline
-                    border.width: 3
+                    border.width: Config.controlBorderWidth
 
                     Behavior on color {
                         enabled: Config.animDuration > 0

@@ -1,6 +1,7 @@
 {
     "oledMode": false,
     "lightMode": false,
+    "controlBorderWidth": 2,
     "roundness": 16,
     "font": "JetBrains Mono",
     "fontSize": 14,

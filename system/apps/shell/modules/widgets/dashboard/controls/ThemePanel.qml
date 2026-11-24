@@ -524,6 +524,34 @@ Item {
                             }
                         }
 
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Styling.spacing(8)
+                            StyledText { text: "Control border width" }
+                            StyledSlider {
+                                id: borderSlider
+                                objectName: "control-border-width"
+                                Accessible.name: "Control border width"
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 20
+                                scroll: false
+                                smoothDrag: false
+                                stepSize: 1 / 6
+                                snapMode: "always"
+                                tooltipText: Math.round(value * 6) + " px"
+                                readonly property real configValue: Config.controlBorderWidth / 6
+                                property bool ready: false
+                                Component.onCompleted: { value = configValue; ready = true; }
+                                onConfigValueChanged: value = configValue
+                                onValueChanged: {
+                                    const pixels = Math.round(value * 6);
+                                    if (ready && pixels !== Config.theme.controlBorderWidth)
+                                        Config.theme.controlBorderWidth = pixels;
+                                }
+                            }
+                            StyledText { text: Config.controlBorderWidth + " px" }
+                        }
+
                     }
 
                     // Shadow section
@@ -830,7 +858,7 @@ Item {
                                         Layout.preferredHeight: 16
                                         radius: 4
                                         color: Config.resolveColor(Config.theme.shadowColor)
-                                        border.width: 3
+                                        border.width: Config.controlBorderWidth
                                         border.color: Colors.outline
                                     }
 

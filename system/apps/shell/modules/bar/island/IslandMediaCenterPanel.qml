@@ -223,7 +223,7 @@ Item {
                     radius: width / 2
                     color: "transparent"
                     border.color: Styling.withOpacity(Colors.scrim, 0.45)
-                    border.width: 3
+                    border.width: Config.controlBorderWidth
                 }
 
                 // Rotating Vinyl Disc body
@@ -246,7 +246,7 @@ Item {
                         radius: width / 2
                         color: Colors.surfaceContainerLowest
                         border.color: Colors.outlineVariant
-                        border.width: 3
+                        border.width: Config.controlBorderWidth
 
                         // Concentric vinyl microgrooves
                         Rectangle {
@@ -256,7 +256,7 @@ Item {
                             radius: width / 2
                             color: "transparent"
                             border.color: Styling.withOpacity(Colors.outline, 0.07)
-                            border.width: 3
+                            border.width: Config.controlBorderWidth
                         }
 
                         Rectangle {
@@ -266,7 +266,7 @@ Item {
                             radius: width / 2
                             color: "transparent"
                             border.color: Styling.withOpacity(Colors.outline, 0.06)
-                            border.width: 3
+                            border.width: Config.controlBorderWidth
                         }
 
                         Rectangle {
@@ -276,7 +276,7 @@ Item {
                             radius: width / 2
                             color: "transparent"
                             border.color: Styling.withOpacity(Colors.outline, 0.05)
-                            border.width: 3
+                            border.width: Config.controlBorderWidth
                         }
 
                         // Vinyl specular reflection cones (dual opposing highlights)
@@ -352,7 +352,7 @@ Item {
                                 radius: 5
                                 color: Colors.surfaceContainerLowest
                                 border.color: Colors.overSurface
-                                border.width: 3
+                                border.width: Config.controlBorderWidth
                             }
                         }
                     }

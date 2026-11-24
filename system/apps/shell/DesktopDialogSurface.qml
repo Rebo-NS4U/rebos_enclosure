@@ -1,4 +1,5 @@
 import QtQuick
+import qs.config
 import QtQuick.Controls
 import QtQuick.Layouts
 import qs.modules.components
@@ -80,7 +81,7 @@ StyledRect {
                 id: search
                 Layout.fillWidth: true
                 implicitHeight: Math.max(Styling.spacing(48), Styling.fontSize(0) + Styling.spacing(20))
-                border.width: 3
+                border.width: Config.controlBorderWidth
                 border.color: inputActiveFocus ? Colors.primary : Qt.alpha(Colors.outline, 0.3)
                 Accessible.name: controller.authenticating ? "Authentication response" : "Search choices"
                 enabled: !controller.authenticating || (controller.flow?.isResponseRequired ?? false)

@@ -62,7 +62,7 @@ SettingsGroup {
         background: Rectangle {
             color: colorButton.swatchColor
             radius: Styling.radius(-4)
-            border.width: 3
+            border.width: Config.controlBorderWidth
             border.color: colorButton.selected || colorButton.activeFocus ? colorButton.inkColor : Colors.outline
         }
         contentItem: Text {
@@ -251,7 +251,7 @@ SettingsGroup {
                         background: Rectangle {
                             color: suggestedSwatch.modelData
                             radius: Styling.radius(-4)
-                            border.width: 3
+                            border.width: Config.controlBorderWidth
                             border.color: suggestedSwatch.activeFocus || root.draftColors[root.pickedRole] === suggestedSwatch.modelData ? Colors.overSurface : Colors.outline
                         }
                         StyledToolTip {
@@ -283,7 +283,7 @@ SettingsGroup {
                     radius: Styling.radius(-4)
                     color: wallpaperSampler.hoverColor || root.draftColors[root.pickedRole] ||
                            (root.pickedRole === 0 ? Colors.primary : Colors.secondary)
-                    border.width: 3
+                    border.width: Config.controlBorderWidth
                     border.color: Colors.outline
                 }
                 Caption { text: wallpaperSampler.hoverColor || root.draftColors[root.pickedRole] || "Automatic color" }

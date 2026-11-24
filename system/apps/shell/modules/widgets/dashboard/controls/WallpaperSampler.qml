@@ -1,4 +1,5 @@
 import QtQuick
+import qs.config
 
 // Samples the displayed image, excluding the letterbox around its fitted bounds.
 Item {
@@ -199,7 +200,7 @@ Item {
         radius: 5
         color: "transparent"
         border.color: "white"
-        border.width: 3
+        border.width: Config.controlBorderWidth
         Rectangle { anchors.fill: parent; anchors.margins: 2; radius: 3; color: "transparent"; border.color: "black" }
     }
 }

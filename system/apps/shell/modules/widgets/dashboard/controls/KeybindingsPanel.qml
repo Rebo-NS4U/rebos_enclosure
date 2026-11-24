@@ -379,7 +379,7 @@ Item {
                     width: shortcutList.width
                     implicitHeight: rowLayout.implicitHeight + 32
                     variant: hover.hovered ? "focus" : "pane"
-                    border.width: 3
+                    border.width: Config.controlBorderWidth
                     border.color: Qt.alpha(Colors.outline, 0.3)
                     radius: Styling.radius(-2)
 

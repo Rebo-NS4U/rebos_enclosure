@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import qs.config
 import QtQuick.Layouts
 import qs.modules.components
 import qs.modules.theme
@@ -39,7 +40,7 @@ StyledRect {
     implicitHeight: column.implicitHeight + (collapsible ? 24 : 32)
     variant: "common"
     radius: Styling.radius(-2)
-    border.width: 3
+    border.width: Config.controlBorderWidth
     border.color: Qt.alpha(Colors.outline, 0.3)
     ColumnLayout {
         id: column
@@ -53,7 +54,7 @@ StyledRect {
             id: expandButton
             background: StyledRect {
                 variant: expandButton.hovered ? "focus" : "transparent"
-                border.width: expandButton.activeFocus ? 3 : 0
+                border.width: expandButton.activeFocus ? Config.controlBorderWidth : 0
                 border.color: Colors.primary
                 radius: Styling.radius(-4)
             }

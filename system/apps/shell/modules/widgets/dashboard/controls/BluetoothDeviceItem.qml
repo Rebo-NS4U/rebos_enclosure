@@ -31,7 +31,7 @@ Item {
         anchors.fill: parent
         variant: mouseArea.containsMouse ? "focus" : root.baseVariant
         radius: Styling.radius(-2)
-        border.width: 3
+        border.width: Config.controlBorderWidth
         border.color: Qt.alpha(Colors.outline, 0.3)
     }
 

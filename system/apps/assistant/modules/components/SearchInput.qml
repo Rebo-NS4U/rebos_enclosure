@@ -8,7 +8,7 @@ StyledRect {
     id: root
     readonly property bool orbital: Styling.shellStyle === "orbital"
     variant: orbital ? "internalbg" : "pane"
-    border.width: (orbital && inputActiveFocus) || (enableBorder && borderData?.[1] > 0) ? 3 : 0
+    border.width: (orbital && inputActiveFocus) || (enableBorder && borderData?.[1] > 0) ? Config.controlBorderWidth : 0
     border.color: orbital && inputActiveFocus ? Colors.primary : Config.resolveColor(borderData?.[0] ?? "transparent")
 
     property alias text: textField.text

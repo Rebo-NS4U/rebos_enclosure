@@ -10,6 +10,7 @@ var data = {
     "wallpaperDitherStrength": "strong",
     "ditherStrength": 20,
     "lightMode": false,
+    "controlBorderWidth": 2,
     "roundness": 16,
     "font": "JetBrains Mono",
     "fontSize": 14,

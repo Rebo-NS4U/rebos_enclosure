@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.config
 import "MediaGridPaging.js" as MediaGridPaging
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -1410,7 +1411,7 @@ PanelWindow {
                             color: Colors.overSurface
                             placeholderTextColor: Colors.overSurfaceVariant
                             Accessible.name: "TorBox API key"
-                            background: Rectangle { color: Colors.surface; radius: root.unit * 0.6; border.width: 3; border.color: Colors.overSurfaceVariant }
+                            background: Rectangle { color: Colors.surface; radius: root.unit * 0.6; border.width: Config.controlBorderWidth; border.color: Colors.overSurfaceVariant }
                         }
                         MenuButton {
                             text: "Connect key"

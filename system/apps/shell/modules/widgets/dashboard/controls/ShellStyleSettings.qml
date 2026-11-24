@@ -83,7 +83,7 @@ SettingsGroup {
                     controlPressed: card.down
                     variant: card.hovered ? "focus" : "common"
                     radius: Styling.radius(-2)
-                    border.width: 3
+                    border.width: Config.controlBorderWidth
                     border.color: card.selected || card.activeFocus ? Colors.primary : Qt.alpha(Colors.outline, 0.3)
                 }
                 contentItem: ColumnLayout {

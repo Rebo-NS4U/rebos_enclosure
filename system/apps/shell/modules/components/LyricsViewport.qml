@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import qs.config
 import QtQuick.Controls
 import qs.modules.services
 import qs.modules.theme
@@ -128,7 +129,7 @@ Item {
                             GradientStop { position: 0; color: Styling.withOpacity(Colors.primary, 0.23) }
                             GradientStop { position: 1; color: Styling.withOpacity(Colors.primary, 0.06) }
                         }
-                        border.width: 3
+                        border.width: Config.controlBorderWidth
                         border.color: Styling.withOpacity(Colors.primary, 0.3)
                         Behavior on opacity { NumberAnimation { duration: Motion.enter } }
                     }

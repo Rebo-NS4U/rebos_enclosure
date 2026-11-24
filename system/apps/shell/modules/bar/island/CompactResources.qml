@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import qs.config
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
@@ -90,7 +91,7 @@ Item {
         background: StyledRect {
             variant: button.hovered || button.visualFocus ? "focus" : "transparent"
             radius: Styling.radius(-4)
-            border.width: button.visualFocus ? 3 : 0
+            border.width: button.visualFocus ? Config.controlBorderWidth : 0
             border.color: Colors.primary
         }
         readonly property string heading: title + (activeSort ? (panel.descending ? " ↓" : " ↑") : "")

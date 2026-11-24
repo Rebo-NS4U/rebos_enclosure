@@ -78,7 +78,7 @@ Button {
                 radius: 3
                 color: root.checkState === Qt.Unchecked ? "transparent" : Colors.primary
                 border.color: root.checkState === Qt.Unchecked ? Colors.outline : Colors.primary
-                border.width: 3
+                border.width: Config.controlBorderWidth
 
                 Text {
                     renderType: Text.NativeRendering
@@ -101,7 +101,7 @@ Button {
                 radius: 7
                 color: "transparent"
                 border.color: root.checkState === Qt.Checked ? Colors.primary : Colors.outline
-                border.width: 3
+                border.width: Config.controlBorderWidth
 
                 Rectangle {
                     anchors.centerIn: parent

@@ -17,7 +17,7 @@ TextField {
     background: StyledRect {
         variant: "internalbg"
         radius: Styling.radius(-4)
-        border.width: 3
+        border.width: Config.controlBorderWidth
         border.color: root.activeFocus ? Colors.primary : Qt.alpha(Colors.outline, 0.3)
     }
 }

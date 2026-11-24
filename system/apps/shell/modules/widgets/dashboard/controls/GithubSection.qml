@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import qs.config
 import QtQuick.Layouts
 import qs.modules.components
 import qs.modules.theme
@@ -16,7 +17,7 @@ StyledRect {
     implicitHeight: column.implicitHeight + 24
     variant: "common"
     radius: Styling.radius(-2)
-    border.width: 3
+    border.width: Config.controlBorderWidth
     border.color: Qt.alpha(Colors.outline, 0.3)
     ColumnLayout {
         id: column

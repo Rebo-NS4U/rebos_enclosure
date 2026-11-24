@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import qs.config
 import QtQuick.Controls
 import QtQuick.Layouts
 import qs.modules.components
@@ -21,7 +22,7 @@ Button {
     background: StyledRect {
         variant: root.hovered || root.down ? "focus" : "common"
         radius: Styling.radius(-2)
-        border.width: 3
+        border.width: Config.controlBorderWidth
         border.color: root.activeFocus || root.selected ? Colors.primary : Qt.alpha(Colors.outline, 0.3)
     }
     contentItem: RowLayout {

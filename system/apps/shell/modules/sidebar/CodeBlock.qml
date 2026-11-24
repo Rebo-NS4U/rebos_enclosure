@@ -70,7 +70,7 @@ ColumnLayout {
 
                 background: StyledRect {
                     variant: parent.hovered || parent.down ? "focus" : "transparent"
-                    border.width: parent.activeFocus ? 3 : 0
+                    border.width: parent.activeFocus ? Config.controlBorderWidth : 0
                     border.color: Colors.primary
                     radius: Styling.radius(-4)
                 }

@@ -20,7 +20,7 @@ CheckBox {
         width: 22; height: 22
         radius: Math.min(6, Config.roundness)
         color: control.checked ? Colors.primary : Colors.surface
-        border.width: 3
+        border.width: Config.controlBorderWidth
         border.color: control.activeFocus || control.hovered ? Colors.primary : Colors.outline
         StyledText {
             anchors.centerIn: parent
@@ -40,7 +40,7 @@ CheckBox {
     background: Rectangle {
         color: "transparent"
         radius: Math.min(8, Config.roundness)
-        border.width: control.activeFocus ? 3 : 0
+        border.width: control.activeFocus ? Config.controlBorderWidth : 0
         border.color: Colors.primary
     }
 }

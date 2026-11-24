@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import qs.config
 import Quickshell
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -145,7 +146,7 @@ Item {
         background: Rectangle {
             radius: 8
             color: Qt.alpha(BarAppearance.activeColor, button.down ? 0.28 : button.hovered ? 0.22 : button.muted ? 0.09 : 0.16)
-            border.width: 3
+            border.width: Config.controlBorderWidth
             border.color: Qt.alpha(BarAppearance.activeColor, button.hovered ? 0.4 : 0.16)
         }
         contentItem: StyledText {
@@ -205,7 +206,7 @@ Item {
         topRightRadius: topLeftRadius
         bottomLeftRadius: root.inlineMode ? Styling.radius(0) : topLeftRadius
         bottomRightRadius: bottomLeftRadius
-        border.width: !root.inlineMode && BarAppearance.framed ? 3 : 0
+        border.width: !root.inlineMode && BarAppearance.framed ? Config.controlBorderWidth : 0
         border.color: BarAppearance.panelBorder(false)
 
         MouseArea {

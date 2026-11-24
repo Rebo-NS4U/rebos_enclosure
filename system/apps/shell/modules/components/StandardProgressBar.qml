@@ -1,4 +1,5 @@
 import QtQuick
+import qs.config
 import qs.modules.theme
 
 // A non-interactive progress display using the slider rail.
@@ -40,7 +41,7 @@ Item {
         height: track.thickness + 4
         radius: width / 2
         color: "white"
-        border.width: 3
+        border.width: Config.controlBorderWidth
         border.color: Colors.surface
     }
 }

@@ -16,7 +16,7 @@ ComboBox {
     background: StyledRect {
         variant: root.hovered ? "focus" : "pane"
         radius: Config.roundness
-        border.width: 3
+        border.width: Config.controlBorderWidth
         border.color: root.activeFocus || root.popup.visible ? Colors.primary : Colors.outlineVariant
     }
     contentItem: StyledText {

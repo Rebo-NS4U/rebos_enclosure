@@ -1345,7 +1345,7 @@ Item {
             inputMethodHints: Qt.ImhDigitsOnly
             selectionColor: Qt.alpha(Colors.primary, 0.3)
         }
-        background: StyledRect { variant: number.activeFocus ? "focus" : "pane"; radius: Styling.radius(-4); border.width: 3; border.color: number.activeFocus ? Colors.primary : Qt.alpha(Colors.outline, 0.3) }
+        background: StyledRect { variant: number.activeFocus ? "focus" : "pane"; radius: Styling.radius(-4); border.width: Config.controlBorderWidth; border.color: number.activeFocus ? Colors.primary : Qt.alpha(Colors.outline, 0.3) }
         up.indicator: StyledRect {
             id: upButton
             x: number.width - width; width: 32; height: number.height
@@ -1391,7 +1391,7 @@ Item {
             controlPressed: select.down
             variant: select.down && controlSurface ? "internalbg" : select.hovered || select.down ? "focus" : "common"
             radius: Styling.radius(-4)
-            border.width: 3
+            border.width: Config.controlBorderWidth
             border.color: select.activeFocus ? Colors.primary : Qt.alpha(Colors.outline, 0.3)
         }
         delegate: ItemDelegate {
@@ -2202,7 +2202,7 @@ Item {
                     implicitHeight: deleteContent.implicitHeight + 24
                     variant: "pane"
                     radius: Config.roundness
-                    border.width: 3
+                    border.width: Config.controlBorderWidth
                     border.color: Qt.alpha(Colors.error, 0.5)
                     ColumnLayout {
                         id: deleteContent
@@ -2248,7 +2248,7 @@ Item {
                             controlPressed: bookCard.down
                             variant: bookCard.down && controlSurface ? "internalbg" : bookCard.hovered || bookCard.down ? "focus" : "common"
                             radius: Styling.radius(-4)
-                            border.width: 3
+                            border.width: Config.controlBorderWidth
                             border.color: bookCard.modelData.id === root.bookId || bookCard.activeFocus ? Colors.primary : Qt.alpha(Colors.outlineVariant, 0.4)
                         }
                         contentItem: ColumnLayout {
@@ -2629,7 +2629,7 @@ Item {
                                                     strength: Math.min(1, glyph.spark * (glyph.failedFeedback ? 1.4 : 0.35))
                                                     growth: glyph.failedFeedback ? 0.55 : 0
                                                     color: Qt.alpha(glyph.failedFeedback ? Colors.error : Colors.primary, glyph.failedFeedback ? 0.32 : 0.07)
-                                                    border.width: 3
+                                                    border.width: Config.controlBorderWidth
                                                     border.color: Qt.alpha(glyph.failedFeedback ? Colors.error : Colors.primary, glyph.failedFeedback ? 0.9 : 0.22)
                                                 }
                                                 onCaretHereChanged: { if (caretHere && initialized) Qt.callLater(() => smoothCaret.follow(glyph)); }
@@ -2665,7 +2665,7 @@ Item {
                                                     radius: Math.min(Config.roundness, 5)
                                                     z: -1
                                                     color: Qt.alpha(glyph.incorrect ? Colors.error : Colors.primary, Math.min(0.32, (glyph.caretHere ? 0.16 : 0.07) + glyph.spark * 0.18))
-                                                    border.width: 3
+                                                    border.width: Config.controlBorderWidth
                                                     border.color: Qt.alpha(glyph.incorrect ? Colors.error : Colors.primary, Math.min(1, (glyph.caretHere || glyph.incorrect ? 0.65 : 0.28) + glyph.spark * 0.55))
                                                 }
                                                 text: modelData === "\n" ? "↵" : modelData === "\t" ? "⇥" : modelData === " " ? "\u00a0" : modelData
@@ -2740,7 +2740,7 @@ Item {
                                     anchors.fill: parent
                                     radius: Math.min(4, width / 3, height / 3)
                                     color: Qt.alpha(smoothCaret.accent, 0.46)
-                                    border.width: 3
+                                    border.width: Config.controlBorderWidth
                                     border.color: Qt.alpha(smoothCaret.accent, 0.8)
                                     gradient: Gradient {
                                         GradientStop { position: 0; color: Qt.alpha(smoothCaret.accent, 0.58) }

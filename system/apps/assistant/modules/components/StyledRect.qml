@@ -1075,7 +1075,7 @@ ClippingRectangle {
 
     border.color: Config.resolveColor(borderData?.[0] ?? "transparent")
     border.width: !root.enableBorder || !(borderData?.[1] > 0) ? 0
-        : (root.variant === "popup" || root.variant === "bg") ? borderData[1] : 3
+        : (root.variant === "popup" || root.variant === "bg") ? borderData[1] : Config.controlBorderWidth
 
     // Parent directly to the root: ClippingRectangle composites its native
     // border above its contentItem, so a normal child cannot replace that line.

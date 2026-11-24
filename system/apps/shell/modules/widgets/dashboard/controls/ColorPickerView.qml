@@ -110,7 +110,7 @@ Item {
                     radius: Styling.radius(-4)
                     color: Config.resolveColor(root.currentColor)
                     border.color: Colors.outline
-                    border.width: 3
+                    border.width: Config.controlBorderWidth
                 }
 
                 Text {
@@ -270,7 +270,7 @@ Item {
                             radius: 10
                             color: Colors[colorItem.modelData] || "transparent"
                             border.color: Colors.outline
-                            border.width: 3
+                            border.width: Config.controlBorderWidth
                         }
 
                         Text {

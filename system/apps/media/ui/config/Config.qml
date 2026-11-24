@@ -32,6 +32,7 @@ Singleton {
   }
  }
  readonly property string defaultFont: theme.font
+ readonly property int controlBorderWidth: Math.max(0, Math.min(6, theme.controlBorderWidth))
  readonly property int roundness: theme.roundness
  readonly property int animDuration: theme.animDuration
  function resolveColor(value): color {

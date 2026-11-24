@@ -1167,7 +1167,7 @@ ClippingRectangle {
 
     border.color: Config.resolveColor(borderData?.[0] ?? "transparent")
     border.width: !root.enableBorder || !(borderData?.[1] > 0) ? 0
-        : (root.variant === "popup" || root.variant === "bg") ? borderData[1] : 3
+        : (root.variant === "popup" || root.variant === "bg") ? borderData[1] : Config.controlBorderWidth
 
     Loader {
         active: root.buttonSurface && (root.styleOverride || Styling.shellStyle) === "glyph"

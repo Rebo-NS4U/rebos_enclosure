@@ -81,7 +81,7 @@ ColumnLayout {
                     objectName: "swatch-fill"
                     fillColor: swatch.modelData
                     backgroundOpacity: 1
-                    border.width: 3
+                    border.width: Config.controlBorderWidth
                     border.color: Colors.overSurface
                 }
             }

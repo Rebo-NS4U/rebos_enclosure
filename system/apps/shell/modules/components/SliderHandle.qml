@@ -1,4 +1,5 @@
 import QtQuick
+import qs.config
 import qs.modules.theme
 
 Rectangle {
@@ -19,7 +20,7 @@ Rectangle {
         height: root.vertical ? 5 : 18
         radius: 2
         color: root.focused ? Colors.overSurface : root.accent
-        border.width: 3
+        border.width: Config.controlBorderWidth
         border.color: Colors.surface
     }
 }

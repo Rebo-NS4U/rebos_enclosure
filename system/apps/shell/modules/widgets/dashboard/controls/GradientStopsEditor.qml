@@ -192,7 +192,7 @@ Item {
                     height: 32
                     radius: Styling.radius(-4)
                     border.color: Colors.outline
-                    border.width: 3
+                    border.width: Config.controlBorderWidth
                     clip: true
 
                     Canvas {
@@ -275,7 +275,7 @@ Item {
                             anchors.centerIn: parent
                             color: Config.resolveColor(stopHandle.stopColor)
                             border.color: stopHandle.isSelected ? Styling.srItem("overprimary") : Colors.outline
-                            border.width: 3
+                            border.width: Config.controlBorderWidth
 
                             // Inner highlight
                             Rectangle {

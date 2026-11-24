@@ -18,7 +18,7 @@ class ThemeSettingsTests(unittest.TestCase):
             shutil.copytree(source / 'modules/theme', root / 'modules/theme')
             settings = root / 'xdg/rebos_shell/config/theme.json'
             settings.parent.mkdir(parents=True)
-            settings.write_text(json.dumps(dict(oledMode=True, shellStyle='quiet', fontSize=18)))
+            settings.write_text(json.dumps(dict(oledMode=True, shellStyle='quiet', fontSize=18, controlBorderWidth=5)))
             palette = root / '.cache/rebos_shell/colors.json'
             palette.parent.mkdir(parents=True)
             palette.write_text(json.dumps(dict(background='#123456', surface='#234567',
@@ -43,7 +43,7 @@ ShellRoot {
             if (++polls > 60) { console.error("Theme update timed out"); Qt.exit(1); }
             if (phase === 0) {
                 if (!Config.oledMode || Config.theme.fontSize !== 18) return;
-                if (Colors.background.toString() !== "#000000" || Colors.surface.toString() !== "#0f0f0f"
+                if (Config.controlBorderWidth !== 5 || Colors.background.toString() !== "#000000" || Colors.surface.toString() !== "#0f0f0f"
                     || Colors.surfaceContainerLowest.toString() !== "#000000"
                     || Colors.surfaceDim.toString() !== "#000000" || Styling.shellStyle !== "quiet") {
                     console.error("OLED roles or shell preferences mismatch"); Qt.exit(1); return;
@@ -51,7 +51,7 @@ ShellRoot {
                 phase++; writer.running = true; return;
             }
             if (!Config.lightMode || Config.oledMode || Styling.shellStyle !== "frosted") return;
-            if (Colors.background.toString() !== "#123456" || Colors.surface.toString() !== "#234567"
+            if (Config.controlBorderWidth !== 2 || Colors.background.toString() !== "#123456" || Colors.surface.toString() !== "#234567"
                 || Colors.surfaceContainerLowest.toString() !== "#345678"
                 || Colors.surfaceDim.toString() !== "#456789" || Config.theme.fontSize !== 14) {
                 console.error("Light mode roles or fallback mismatch"); Qt.exit(1); return;

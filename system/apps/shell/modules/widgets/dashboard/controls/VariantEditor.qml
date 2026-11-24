@@ -175,7 +175,7 @@ Item {
                                     height: 20
                                     radius: width / 2
                                     color: root.variantConfig ? Config.resolveColor(root.variantConfig.border[0]) : Colors.outline
-                                    border.width: 3
+                                    border.width: Config.controlBorderWidth
                                     border.color: Colors.overBackground
                                     z: 0
                                 }

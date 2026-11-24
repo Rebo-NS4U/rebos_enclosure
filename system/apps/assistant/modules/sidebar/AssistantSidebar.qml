@@ -508,7 +508,7 @@ Item {
                                 variant: parent.hovered || parent.visualFocus ? "focus" : "common"
                                 radius: Styling.radius(8)
                                 border.color: Qt.alpha(Colors.primary, parent.hovered || parent.visualFocus ? 0.40 : 0.14)
-                                border.width: 3
+                                border.width: Config.controlBorderWidth
                             }
                         }
 
@@ -933,7 +933,7 @@ Item {
                         background: StyledRect {
                             variant: accountButton.hovered || accountButton.visualFocus || accountMenu.opened ? "focus" : "internalbg"
                             radius: Styling.radius(8)
-                            border.width: 3
+                            border.width: Config.controlBorderWidth
                             border.color: Qt.alpha(Colors.primary, Ai.codexSignInActive ? 0.65 : 0.22)
                         }
                         onClicked: accountMenu.open()
@@ -1724,7 +1724,7 @@ Item {
                                                         // User = primary; assistant = surface (better contrast than secondary on dark themes)
                                                         variant: isSystem ? "internalbg" : (isUser ? "primary" : "surface")
                                                         radius: Config.roundness
-                                                        border.width: messageDelegate.isEditing ? 3 : 0
+                                                        border.width: messageDelegate.isEditing ? Config.controlBorderWidth : 0
                                                         border.color: Styling.srItem("overprimary")
 
                                                         readonly property color contentColor: isSystem
@@ -2059,7 +2059,7 @@ Item {
 
                                                                             background: Rectangle {
                                                                                 color: Qt.alpha(Colors.error, parent.down ? 0.18 : parent.hovered ? 0.12 : 0.05)
-                                                                                border.width: 3
+                                                                                border.width: Config.controlBorderWidth
                                                                                 border.color: Qt.alpha(Colors.error, 0.22)
                                                                                 radius: Styling.radius(6)
                                                                             }
@@ -2607,7 +2607,7 @@ Item {
                                                     Layout.preferredHeight: 16
                                                     radius: 8
                                                     color: Qt.alpha(Colors.primary, mainChatArea.session.autoApprove ? 0.18 : 0.04)
-                                                    border.width: 3
+                                                    border.width: Config.controlBorderWidth
                                                     border.color: mainChatArea.session.autoApprove ? Colors.primary : Colors.outline
                                                     Rectangle {
                                                         width: 10
@@ -2631,7 +2631,7 @@ Item {
                                             background: Rectangle {
                                                 radius: Styling.radius(8)
                                                 color: Qt.alpha(Colors.primary, autoApproveButton.down ? 0.16 : autoApproveButton.hovered ? 0.08 : 0)
-                                                border.width: autoApproveButton.visualFocus ? 3 : 0
+                                                border.width: autoApproveButton.visualFocus ? Config.controlBorderWidth : 0
                                                 border.color: Colors.primary
                                             }
                                             StyledToolTip {
@@ -2871,7 +2871,7 @@ Item {
                 background: StyledRect {
                     variant: choice_codex.selected ? "focus" : choice_codex.highlighted ? "common" : "transparent"
                     radius: Math.max(0, Config.roundness)
-                    border.width: choice_codex.selected ? 3 : 0
+                    border.width: choice_codex.selected ? Config.controlBorderWidth : 0
                     border.color: Qt.alpha(Colors.primary, 0.3)
                 }
                 contentItem: ColumnLayout {
@@ -2925,7 +2925,7 @@ Item {
                 background: StyledRect {
                     variant: choice_google.selected ? "focus" : choice_google.highlighted ? "common" : "transparent"
                     radius: Math.max(0, Config.roundness)
-                    border.width: choice_google.selected ? 3 : 0
+                    border.width: choice_google.selected ? Config.controlBorderWidth : 0
                     border.color: Qt.alpha(Colors.primary, 0.3)
                 }
                 contentItem: ColumnLayout {
@@ -2979,7 +2979,7 @@ Item {
                 background: StyledRect {
                     variant: choice_distill.selected ? "focus" : choice_distill.highlighted ? "common" : "transparent"
                     radius: Math.max(0, Config.roundness)
-                    border.width: choice_distill.selected ? 3 : 0
+                    border.width: choice_distill.selected ? Config.controlBorderWidth : 0
                     border.color: Qt.alpha(Colors.primary, 0.3)
                 }
                 contentItem: ColumnLayout {

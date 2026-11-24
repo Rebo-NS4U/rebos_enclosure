@@ -200,7 +200,7 @@ ShellRoot {
                 visible: window.dragging
                 radius: 8
                 color: Qt.alpha(root.accent, 0.08)
-                border.width: 3
+                border.width: Config.controlBorderWidth
                 border.color: root.accent
                 Rectangle {
                     anchors.bottom: parent.top; anchors.bottomMargin: 8
@@ -261,7 +261,7 @@ ShellRoot {
                             padding: 12
                             background: StyledRect {
                                 variant: "internalbg"
-                                border.width: 3
+                                border.width: Config.controlBorderWidth
                                 border.color: editor.activeFocus ? Colors.primary : Colors.outlineVariant
                             }
                         }

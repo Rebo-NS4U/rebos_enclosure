@@ -27,7 +27,7 @@ SettingsGroup {
                 background: StyledRect {
                     variant: parent.checked || parent.hovered ? "focus" : "common"
                     radius: Styling.radius(-4)
-                    border.width: 3
+                    border.width: Config.controlBorderWidth
                     border.color: parent.checked || parent.activeFocus ? Colors.primary : Qt.alpha(Colors.outline, 0.3)
                 }
             }

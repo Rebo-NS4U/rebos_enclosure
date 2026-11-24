@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import qs.config
 import QtQuick.Dialogs
 import QtQuick.Layouts
 import Quickshell
@@ -82,7 +83,7 @@ SettingsGroup {
             implicitHeight: 24
             radius: Styling.radius(-4)
             color: root.accent
-            border.width: 3
+            border.width: Config.controlBorderWidth
             border.color: Colors.outline
         }
         SettingsButton {

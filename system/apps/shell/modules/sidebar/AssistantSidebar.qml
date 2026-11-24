@@ -584,7 +584,7 @@ Item {
                                 background: StyledRect {
                                     variant: "internalbg"
                                     radius: Styling.radius(0)
-                                    border.width: 3
+                                    border.width: Config.controlBorderWidth
                                     border.color: Qt.alpha(Colors.primary, sessionTab.selected ? 0.35 : sessionTab.hovered ? 0.16 : 0.06)
                                     color: Qt.alpha(Colors.primary, sessionTab.selected ? 0.12 : sessionTab.hovered ? 0.06 : 0.02)
                                     Behavior on color { ColorAnimation { duration: Config.animDuration / 4 } }
@@ -676,7 +676,7 @@ Item {
                         variant: parent.hovered ? "focus" : "internalbg"
                         radius: Styling.radius(8)
                         border.color: Qt.alpha(Colors.primary, 0.16)
-                        border.width: 3
+                        border.width: Config.controlBorderWidth
                     }
                     contentItem: StyledText {
                         text: Ai.activeSession.geminiPlanUsage ? Ai.activeSession.geminiStatusSummary : Ai.activeSession.checkingPlanUsage ? "Checking plan usage…" : Ai.activeSession.planUsageSummary
@@ -1356,7 +1356,7 @@ Item {
                                                         // User = primary; assistant = surface (better contrast than secondary on dark themes)
                                                         variant: isSystem ? "internalbg" : (isUser ? "primary" : "surface")
                                                         radius: Styling.radius(12)
-                                                        border.width: messageDelegate.isEditing ? 3 : 0
+                                                        border.width: messageDelegate.isEditing ? Config.controlBorderWidth : 0
                                                         border.color: Styling.srItem("overprimary")
 
                                                         readonly property color contentColor: isSystem
@@ -1579,7 +1579,7 @@ Item {
                                                                 background: Rectangle {
                                                                     radius: Styling.radius(8)
                                                                     color: Qt.alpha(Colors.primary, modelData.functionPending === true ? 0.07 : 0.03)
-                                                                    border.width: 3
+                                                                    border.width: Config.controlBorderWidth
                                                                     border.color: Qt.alpha(Colors.primary, modelData.functionPending === true ? 0.22 : 0.08)
                                                                 }
                                                                 contentItem: ColumnLayout {
@@ -1692,7 +1692,7 @@ Item {
 
                                                                             background: Rectangle {
                                                                                 color: Qt.alpha(Colors.error, parent.down ? 0.18 : parent.hovered ? 0.12 : 0.05)
-                                                                                border.width: 3
+                                                                                border.width: Config.controlBorderWidth
                                                                                 border.color: Qt.alpha(Colors.error, 0.22)
                                                                                 radius: Styling.radius(6)
                                                                             }
@@ -1950,7 +1950,7 @@ Item {
                                 variant: "pane"
                                 radius: Styling.radius(16)
                                 border.color: Qt.alpha(Colors.primary, inputField.activeFocus ? 0.6 : 0.22)
-                                border.width: 3
+                                border.width: Config.controlBorderWidth
                                 enableShadow: true
 
                                 DropArea {
@@ -2194,7 +2194,7 @@ Item {
                                                     Layout.preferredHeight: 16
                                                     radius: 8
                                                     color: Qt.alpha(Colors.primary, mainChatArea.session.autoApprove ? 0.18 : 0.04)
-                                                    border.width: 3
+                                                    border.width: Config.controlBorderWidth
                                                     border.color: mainChatArea.session.autoApprove ? Colors.primary : Colors.outline
                                                     Rectangle {
                                                         width: 10
@@ -2218,7 +2218,7 @@ Item {
                                             background: Rectangle {
                                                 radius: Styling.radius(8)
                                                 color: Qt.alpha(Colors.primary, autoApproveButton.down ? 0.16 : autoApproveButton.hovered ? 0.08 : 0)
-                                                border.width: autoApproveButton.visualFocus ? 3 : 0
+                                                border.width: autoApproveButton.visualFocus ? Config.controlBorderWidth : 0
                                                 border.color: Colors.primary
                                             }
                                             StyledToolTip {

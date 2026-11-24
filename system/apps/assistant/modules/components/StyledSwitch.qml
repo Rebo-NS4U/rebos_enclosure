@@ -15,7 +15,7 @@ Switch {
         radius: height / 2
         color: root.checked ? Colors.primary : Colors.surfaceBright
         border.color: root.activeFocus ? Colors.primary : (root.checked ? Colors.primary : Colors.outline)
-        border.width: 3
+        border.width: Config.controlBorderWidth
         opacity: root.enabled ? 1 : 0.5
         Behavior on color {
             enabled: Config.animDuration > 0

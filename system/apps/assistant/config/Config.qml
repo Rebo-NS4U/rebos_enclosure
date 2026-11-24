@@ -118,6 +118,7 @@ Singleton {
             property int ditherStrength: 20
             property bool oledMode: false
             property bool lightMode: false
+            property int controlBorderWidth: 2
             property int roundness: 16
             property string font: "JetBrains Mono"
             property int fontSize: 14
@@ -790,6 +791,7 @@ Singleton {
     property bool oledMode: lightMode ? false : theme.oledMode
     property bool lightMode: theme.lightMode
 
+    readonly property int controlBorderWidth: Math.max(0, Math.min(6, theme.controlBorderWidth))
     property int roundness: theme.roundness
     property string defaultFont: theme.font
     property int animDuration: theme.animDuration

@@ -689,7 +689,7 @@ Item {
                             Layout.preferredHeight: width
                             radius: width / 2
                             color: appLauncher.selectedIndex === index ? Colors.primary : "transparent"
-                            border.width: 3
+                            border.width: Config.controlBorderWidth
                             border.color: appLauncher.selectedIndex === index ? Colors.primary : Colors.outline
                         }
 
@@ -762,7 +762,7 @@ Item {
                             implicitHeight: keyLabel.implicitHeight + Styling.spacing(6)
                             radius: Styling.radius(-4)
                             color: "transparent"
-                            border.width: root.orbital ? 0 : 3
+                            border.width: root.orbital ? 0 : Config.controlBorderWidth
                             border.color: Qt.alpha(keyLabel.color, 0.5)
                             Text {
                                 id: keyLabel

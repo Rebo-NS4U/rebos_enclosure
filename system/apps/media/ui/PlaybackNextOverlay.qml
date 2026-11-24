@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.config
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
@@ -78,7 +79,7 @@ PanelWindow {
         variant: pointer.containsMouse ? "primary" : "bg"
         backgroundOpacity: 0.96
         radius: Styling.radius(12)
-        border.width: 3
+        border.width: Config.controlBorderWidth
         border.color: Colors.primary
         Accessible.role: Accessible.Button
         Accessible.name: overlay.buttonLabel + ": " + overlay.destination
