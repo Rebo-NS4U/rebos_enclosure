@@ -419,7 +419,7 @@ ClippingRectangle {
         active: !root.hasFillColor && root.rectOpacity > 0 && (["canopy", "metropolis"].includes(material)
             ? !root.controlSurface && ["bg", "popup", "pane", "surface", "surfaceContainer", "bar"].includes(root.variant)
             : material === "orbital"
-                && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus"].includes(root.variant))
+                && ["bg", "popup", "pane", "surface", "surfaceContainer", "internalbg", "focus", "bar"].includes(root.variant))
         sourceComponent: Canvas {
             anchors.fill: parent
             id: materialCanvas
@@ -449,6 +449,45 @@ ClippingRectangle {
             readonly property bool nested: !outer && !barSurface && root.variant !== "bar"
             onBroadChanged: requestPaint()
             onNestedChanged: requestPaint()
+
+            HoverHandler {
+                id: orbitHover
+                enabled: materialCanvas.finish === "orbital" && Config.animDuration > 0
+                blocking: false
+            }
+            property real orbitPhase: 0
+            Timer {
+                interval: 50
+                repeat: true
+                running: materialCanvas.visible && orbitHover.enabled && orbitHover.hovered
+                onTriggered: {
+                    materialCanvas.orbitPhase = (materialCanvas.orbitPhase + 0.025) % (2 * Math.PI)
+                    materialCanvas.requestPaint()
+                }
+            }
+
+            function paintGravityWell(ctx) {
+                const radius = Math.min(width * 0.20, height * 0.45, 55)
+                if (radius < 7) return
+                ctx.save()
+                ctx.translate(width - radius - 8, height * 0.46)
+                ctx.strokeStyle = Qt.alpha(pigment, 0.30)
+                ctx.lineWidth = 0.8
+                for (const scale of [1, 0.72, 0.49, 0.30, 0.15]) {
+                    const r = radius * scale
+                    const dip = radius * 0.40 * Math.pow(1 - scale, 2)
+                    const wave = Math.sin(orbitPhase * 2 - scale * 6) * radius * 0.035
+                    ctx.beginPath()
+                    ctx.ellipse(-r, dip + wave - r * 0.32, r * 2, r * 0.64)
+                    ctx.stroke()
+                }
+                ctx.fillStyle = Qt.alpha(accent, 0.78)
+                ctx.beginPath()
+                ctx.arc(Math.cos(orbitPhase) * radius, Math.sin(orbitPhase) * radius * 0.32,
+                    Math.max(1.4, radius * 0.05), 0, 2 * Math.PI)
+                ctx.fill()
+                ctx.restore()
+            }
 
             function paintCanopy(ctx) {
                 const leafSize = broad ? Math.min(28, width * 0.047, height * 0.105) : Math.min(12, height * 0.23, width * 0.035)
@@ -644,6 +683,7 @@ ClippingRectangle {
                     paintCanopy(ctx)
 
                 } else if (finish === "orbital") {
+                    paintGravityWell(ctx)
                     // Elliptical orbital tracks wrap a quiet, recessed space capsule.
                     ctx.strokeStyle=ink(0.20);ctx.lineWidth=1;
                     if(root.traceThemeFrame(ctx,outer?6:3))ctx.stroke();
