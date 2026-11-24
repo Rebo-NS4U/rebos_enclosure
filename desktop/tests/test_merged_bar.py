@@ -167,6 +167,26 @@ ShellRoot {
     filter.text = "chip b"; order("Chip B"); filter.text = "";
     panel.stats.temperatures = [{id: "b", name: "Chip B", temp: 5}, {id: "a", name: "Chip A", temp: 40}];
     order("Chip B,Chip A"); click("cpu"); order("Alpha,Gamma,Beta");
+    const results = tester.findChild(panel, "resource-results");
+    const processes = Array.from({length: 60}, (_, i) => ({
+     pid: i + 100, name: "Process " + i, cpu: 60 - i, ram: 1024
+    }));
+    panel.stats.processes = processes;
+    tester.tryCompare(results, "count", 60);
+    results.forceLayout();
+    tester.mouseWheel(results, results.width / 2, results.height / 2, 0, -120);
+    tester.tryVerify(() => results.contentY > 0 && !results.moving);
+    const offset = results.contentY;
+    panel.stats.processes = processes.slice(1).concat([
+     {pid: 999, name: "New process", cpu: 0, ram: 1024},
+     {pid: 1000, name: "Another process", cpu: 0, ram: 1024}
+    ]);
+    tester.tryCompare(results, "count", 61);
+    tester.wait(50);
+    if (results.contentY !== offset) throw Error("Scroll offset changed from " + offset + " to " + results.contentY);
+    click("ram");
+    tester.tryVerify(() => results.atYBeginning);
+    tester.tryVerify(() => results.itemAtIndex(0)?.entry.name === "Process 1");
     console.log("MERGED BAR PASSED"); Qt.quit();
    } catch (error) { console.error(error); Qt.exit(1); }
   } }

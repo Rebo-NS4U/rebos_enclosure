@@ -38,6 +38,22 @@ Item {
         });
     }
 
+    onMatchesChanged: {
+        // Update rows in place so sampling can reorder results without resetting scroll.
+        const sharedCount = Math.min(resultRows.count, matches.length);
+        for (let index = 0; index < sharedCount; ++index)
+            resultRows.setProperty(index, "entry", matches[index]);
+        if (resultRows.count > matches.length)
+            resultRows.remove(matches.length, resultRows.count - matches.length);
+        for (let index = sharedCount; index < matches.length; ++index)
+            resultRows.append({entry: matches[index]});
+    }
+
+    ListModel {
+        id: resultRows
+        dynamicRoles: true
+    }
+
     function sortBy(metric: string) {
         descending = sortMetric === metric ? !descending : true;
         sortMetric = metric;
@@ -185,6 +201,7 @@ Item {
             Layout.fillWidth: true
             implicitHeight: 36
             placeholderText: panel.showingSensors ? "Filter sensors by name" : "Filter by name or PID"
+            onTextChanged: results?.positionViewAtBeginning()
             onEscapePressed: panel.backRequested()
         }
         RowLayout {
@@ -206,23 +223,24 @@ Item {
         Caption { visible: text !== ""; text: panel.actionMessage }
         ListView {
             id: results
+            objectName: "resource-results"
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            model: panel.matches
+            model: resultRows
             ScrollBar.vertical: ScrollBar {}
             Caption { anchors.centerIn: parent; visible: results.count === 0; text: panel.showingSensors ? (search.text ? "No matching sensors" : "No temperature sensors available")
                 : search.text ? "No matching processes" : "Collecting processes…" }
             delegate: RowLayout {
                 id: row
-                required property var modelData
-                readonly property bool isSensor: modelData.temp !== undefined
+                required property var entry
+                readonly property bool isSensor: entry.temp !== undefined
                 width: ListView.view.width - 10
                 height: Math.max(Styling.spacing(32), implicitHeight + Styling.spacing(4))
-                Caption { Layout.fillWidth: true; text: parent.modelData.name }
+                Caption { Layout.fillWidth: true; text: row.entry.name }
                 Caption {
-                    text: row.isSensor ? row.modelData.temp.toFixed(1) + " °C"
-                        : row.modelData.cpu.toFixed(1) + "%"
+                    text: row.isSensor ? row.entry.temp.toFixed(1) + " °C"
+                        : row.entry.cpu.toFixed(1) + "%"
                 }
                 Caption {
                     visible: !row.isSensor
@@ -231,19 +249,19 @@ Item {
                     text: {
                         if (row.isSensor) return "";
                         if (panel.sortMetric === "disk")
-                            return row.modelData.disk == null ? "—" : panel.size(row.modelData.disk) + "/s";
+                            return row.entry.disk == null ? "—" : panel.size(row.entry.disk) + "/s";
                         if (panel.sortMetric === "swap")
-                            return row.modelData.swap == null ? "—" : panel.size(row.modelData.swap);
-                        return panel.size(row.modelData.ram);
+                            return row.entry.swap == null ? "—" : panel.size(row.entry.swap);
+                        return panel.size(row.entry.ram);
                     }
                 }
                 MetricAction {
                     text: "End"
                     danger: true
-                    Accessible.name: "End " + row.modelData.name
+                    Accessible.name: "End " + row.entry.name
                     visible: !row.isSensor
-                    enabled: !row.isSensor && parent.modelData.pid > 1 && !terminate.running
-                    onClicked: { panel.selected = parent.modelData; panel.actionMessage = ""; }
+                    enabled: !row.isSensor && row.entry.pid > 1 && !terminate.running
+                    onClicked: { panel.selected = row.entry; panel.actionMessage = ""; }
                 }
             }
         }
