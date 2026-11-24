@@ -637,7 +637,7 @@
   "system/apps/shell/modules/widgets/dashboard/controls/KeybindingsPanel.qml": "29f6e19011fc2b6c9d6bc775ffa276472455ff2b8c3663dc8d87b8b869a794f8",
   "system/apps/shell/modules/widgets/dashboard/controls/MediaEqualizer.qml": "1ce40c2e14e8adfc04796bf3eda74c4f89ac11d1e79d37d42384fa3403d05664",
   "system/apps/shell/modules/widgets/dashboard/controls/MotionSettings.qml": "f93b0f27874aa72d5aefc02285dbb9466295c9a542e8c1edb72f315230571084",
-  "system/apps/shell/modules/widgets/dashboard/controls/OrbitWallpaperSettings.qml": "8c040c2146947635f71ee85ad56a9a180170c990acc30c12a430044e4ba6a70b",
+  "system/apps/shell/modules/widgets/dashboard/controls/OrbitWallpaperSettings.qml": "7889c5c15d9362bb9ed8ed5c7ae7fe6b1c2a371e6b4b644176993c9420cc9a6a",
   "system/apps/shell/modules/widgets/dashboard/controls/PaletteSettings.qml": "ef33eb434b71e2f56b8b54820942531c03de8fcb019f774bf2d930c37d7408b8",
   "system/apps/shell/modules/widgets/dashboard/controls/PanelTitlebar.qml": "b2f37ab5b1eb35f1ce1190efbf723ff59aee6b2de888ff2b372e7d39f9d1c1a9",
   "system/apps/shell/modules/widgets/dashboard/controls/PerformanceSettings.qml": "b3adfa6d7e80a998d5c2136798c0e861d00a84647566a2179d6761f04555c1d5",

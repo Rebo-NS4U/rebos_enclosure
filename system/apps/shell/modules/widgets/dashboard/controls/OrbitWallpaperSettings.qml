@@ -27,6 +27,10 @@ SettingsGroup {
         exchange();
     }
 
+    function applyPalette(paper: string, ink: string, accent: string): void {
+        apply(paletteScope.currentIndex === 0 ? {accent: accent} : {paper: paper, ink: ink, accent: accent});
+    }
+
     function exchange(): void {
         if (client.running)
             return;
@@ -81,21 +85,30 @@ SettingsGroup {
         Layout.fillWidth: true
         spacing: Styling.spacing(12)
 
+        StyledText { text: "Apply presets to" }
+        SettingsComboBox {
+            id: paletteScope
+            objectName: "orbit-palette-scope"
+            Layout.fillWidth: true
+            Accessible.name: "Apply presets to"
+            model: ["Gravity well and alerts", "Entire wallpaper"]
+        }
+
         RowLayout {
             Layout.fillWidth: true
             StyledText { text: "Palette"; Layout.fillWidth: true }
             SettingsButton {
                 text: "Classic"
-                onClicked: root.apply({paper: root.defaults.paper, ink: root.defaults.ink, accent: root.defaults.accent})
+                onClicked: root.applyPalette(root.defaults.paper, root.defaults.ink, root.defaults.accent)
             }
             SettingsButton {
                 objectName: "orbit-nebula"
                 text: "Nebula"
-                onClicked: root.apply({paper: "#140d25", ink: "#e8ceff", accent: "#ff69a5"})
+                onClicked: root.applyPalette("#140d25", "#e8ceff", "#ff69a5")
             }
             SettingsButton {
                 text: "Aurora"
-                onClicked: root.apply({paper: "#081d22", ink: "#baf9de", accent: "#57c4ff"})
+                onClicked: root.applyPalette("#081d22", "#baf9de", "#57c4ff")
             }
         }
 
@@ -103,7 +116,7 @@ SettingsGroup {
             model: [
                 {label: "Background", key: "paper"},
                 {label: "Stars, planets and rings", key: "ink"},
-                {label: "Gravity well core and alerts", key: "accent"}
+                {label: "Gravity well and alerts", key: "accent"}
             ]
             RowLayout {
                 id: row

@@ -406,8 +406,14 @@ ShellRoot {
       categoryScroller.contentY = Math.max(0, orbitPoint.y - 100);
       tester.wait(50);
       tester.mouseClick(nebula);
-      tester.tryVerify(() => orbit.saved?.paper === "#140d25" &&
-       orbit.saved?.accent === "#ff69a5", 3000, "Nebula applies through the wallpaper settings service");
+      tester.tryVerify(() => orbit.saved?.accent === "#ff69a5",
+       3000, "Nebula changes the gravity well and alerts");
+      fixture.check(orbit.saved.paper === "#000000" && orbit.saved.ink === "#f2f2f2",
+       "Accent-only presets preserve the background and foreground colors");
+      fixture.find(orbit, "orbit-palette-scope").currentIndex = 1;
+      tester.mouseClick(nebula);
+      tester.tryVerify(() => orbit.saved?.paper === "#140d25" && orbit.saved?.ink === "#e8ceff",
+       3000, "The entire wallpaper scope applies background and foreground colors");
       settings.searchQuery = "";
       settings.width = 850;
       settings.openSection(4, "colors"); tester.wait(150);
