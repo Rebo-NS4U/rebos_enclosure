@@ -567,7 +567,9 @@ Item {
 
                         StyledRect {
                             objectName: "assistantStatusBubble"
-                            Layout.preferredWidth: statusLabel.implicitWidth + 16
+                            id: statusBubble
+                            readonly property int markerSpace: Styling.shellStyle === "orbital" ? 10 : 0
+                            Layout.preferredWidth: statusLabel.implicitWidth + markerSpace + 16
                             Layout.maximumWidth: Math.max(48, root.hitbox.width - 260)
                             Layout.preferredHeight: 24
                             variant: "common"
@@ -575,8 +577,9 @@ Item {
 
                             backgroundOpacity: Styling.shellStyle === "orbital" ? 0 : -1
                             Rectangle {
-                                visible: Styling.shellStyle === "orbital"
+                                visible: statusBubble.markerSpace > 0
                                 anchors.left: parent.left
+                                anchors.leftMargin: 8
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: 6
                                 height: width
@@ -586,14 +589,18 @@ Item {
                             StyledText {
                                 id: statusLabel
                                 objectName: "assistantStatusLabel"
-                                anchors.centerIn: parent
-                                width: parent.width - 16
+                                anchors.verticalCenter: parent.verticalCenter
+                                anchors.left: parent.left
+                                anchors.leftMargin: 8 + statusBubble.markerSpace
+                                anchors.right: parent.right
+                                anchors.rightMargin: 8
                                 elide: Text.ElideRight
                                 horizontalAlignment: Text.AlignHCenter
                                 text: Ai.activeSession.activityStatus
                                 font.pixelSize: Styling.fontSize(-2)
                                 color: text === "Negative" || text === "Hung" ? Colors.error
-                                    : text === "Running" || text === "Waiting" || text === "Positive" ? Colors.primary : Colors.outline
+                                    : text === "Positive" ? Colors.success
+                                    : text === "Running" || text === "Waiting" ? Colors.primary : Colors.outline
                             }
                             HoverHandler { id: statusHover }
                             StyledToolTip {
