@@ -1,15 +1,19 @@
 // Distance along a chamfered loop, starting at the platform.
 function loop(width, height, slot, count) {
-    const band = height * .64 / count;
-    const y = height * .18 + slot * band;
-    const x = width * (.15 + .045 * (slot % 3));
-    const span = width * (.62 + .04 * (slot % 2));
-    const h = Math.min(height * .16, band * .66);
-    const bevel = Math.min(h * .48, span * .08);
-    const stop = x + span * (.58 - .08 * (slot % 3));
+    const band = height * .65 / count;
+    const h = Math.min(height * .29, band * .65);
+    const y = height * .5 + (slot - (count-1)/2)*band - h*.42;
+    const x = width * (.12 + .045 * (slot % 3));
+    const span = width * (.74 - .035 * (slot % 3));
+    const bevel = Math.min(h*.32, span*.08);
+    const stop = x + span * (.64 - .06 * (slot % 3));
+    // Two offset straights and a dogleg form the mainline through the valley.
     const vertices = [[stop,y],[x+span-bevel,y],[x+span,y+bevel],
-        [x+span,y+h-bevel],[x+span-bevel,y+h],[x+bevel,y+h],
-        [x,y+h-bevel],[x,y+bevel],[x+bevel,y],[stop,y]];
+        [x+span,y+h*.63],[x+span-bevel,y+h*.63+bevel],
+        [x+span*.55,y+h*.63+bevel],[x+span*.55-h*.18,y+h*.45+bevel],
+        [x+bevel,y+h*.45+bevel],[x,y+h*.45],[x,y+h*.12],
+        [x+bevel,y+h*.12-bevel],[x+span*.32,y+h*.12-bevel],
+        [x+span*.32+bevel-h*.12,y],[stop,y]];
     const segments = [];
     let length = 0;
     for (let i = 1; i < vertices.length; ++i) {
@@ -18,7 +22,7 @@ function loop(width, height, slot, count) {
         if (size > 0) segments.push({x:a[0], y:a[1], dx:dx/size, dy:dy/size, start:length, size:size});
         length += size;
     }
-    return {segments, length, stop, y, x, h};
+    return {segments, length, stop, y, x, h, sidingY:y+h*.45+bevel};
 }
 
 function point(loop, phase) {

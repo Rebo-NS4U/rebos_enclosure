@@ -1,5 +1,6 @@
 import QtQuick
 import "RailGeometry.js" as Rail
+import "RailTerrain.js" as Terrain
 
 Rectangle {
     id: rail
@@ -58,6 +59,14 @@ Rectangle {
     Component.onCompleted: reconcile()
 
     Canvas {
+        anchors.fill: parent
+        onPaint: {
+            const c = getContext("2d");
+            c.reset();
+            Terrain.draw(c,width,height);
+        }
+    }
+    Canvas {
         id: track
         anchors.fill: parent
         onPaint: {
@@ -65,21 +74,39 @@ Rectangle {
             c.reset();
             for (const r of rail.routes) {
                 const p = r.path;
-                c.fillStyle = "#a6a6a6";
-                for (let d=0; d<p.length; d+=5) {
-                    const pt = Rail.point(p,d/p.length);
-                    c.fillRect(Math.round(pt.x),Math.round(pt.y),1,1);
-                }
-                c.fillStyle = r.active ? rail.accent : "#686868";
-                c.fillRect(p.stop-21,p.y-10,42,2);
-                c.fillRect(p.stop+19,p.y-14,2,4);
-                c.font = "10px monospace";
-                c.fillText(String(r.idx).padStart(2,"0"),p.stop-21,p.y-15);
+                c.setLineDash([]);
+                c.beginPath();
+                c.moveTo(p.stop,p.y);
+                for (const seg of p.segments)
+                    c.lineTo(seg.x+seg.dx*seg.size,seg.y+seg.dy*seg.size);
+                c.closePath();
+                c.strokeStyle="#292929"; c.lineWidth=8; c.stroke();
+                c.strokeStyle="#060606"; c.lineWidth=6; c.stroke();
+                c.strokeStyle="#d0d0d0"; c.lineWidth=1.4;
+                c.setLineDash([2,4]); c.stroke();
+                c.setLineDash([]);
+                const ink=r.active ? rail.accent : "#888888";
+                const labelSize=Math.min(40,Math.max(12,height*.54/rail.routes.length-30));
+                c.font="bold "+labelSize+"px monospace";
+                c.fillStyle=ink;
+                c.fillText(String(r.idx).padStart(2,"0"),p.stop-44,p.y-22);
+                c.fillRect(p.stop-42,p.y-12,84,3);
+                for (let dx=-42;dx<40;dx+=5)
+                    c.fillRect(p.stop+dx,p.y-8,2,2);
+                c.fillStyle="#414141";
+                c.fillRect(p.stop+34,p.y-31,1,18);
+                c.fillStyle="#141414";
+                c.fillRect(p.stop+29,p.y-42,11,16);
+                c.fillStyle=ink;
+                c.fillRect(p.stop+32,p.y-39,5,5);
+                c.fillStyle="#333333";
+                c.fillRect(p.stop+32,p.y-32,5,3);
+                c.lineWidth=1;
                 // A short parallel passing siding branches off the lower straight.
-                c.strokeStyle = "#555";
+                c.strokeStyle = "#888";
                 c.setLineDash([1,4]);
                 c.beginPath();
-                const sx = p.x + width*.18, sy = p.y+p.h;
+                const sx = p.x + width*.18, sy = p.sidingY;
                 c.moveTo(sx,sy); c.lineTo(sx+10,sy+10);
                 c.lineTo(sx+width*.13,sy+10); c.lineTo(sx+width*.13+10,sy);
                 c.stroke();
@@ -90,6 +117,13 @@ Rectangle {
         c.save();
         c.translate(Math.round(pt.x),Math.round(pt.y)); c.rotate(pt.angle);
         c.globalAlpha = alpha;
+        c.scale(1.45,1.45);
+        if (engine) {
+            const light=c.createLinearGradient(6,0,42,0);
+            light.addColorStop(0,"#505050"); light.addColorStop(1,"transparent");
+            c.fillStyle=light; c.beginPath(); c.moveTo(6,-1); c.lineTo(42,-6);
+            c.lineTo(42,6); c.lineTo(6,1); c.fill();
+        }
         c.fillStyle = "#cecece";
         c.fillRect(-7,-3,engine ? 11 : 14,6);
         if (engine) { c.fillRect(4,-1,4,4); c.fillRect(-6,-5,6,2); }
@@ -122,11 +156,11 @@ Rectangle {
                 } else r.phase = (r.phase + dt*7/p.length + 1)%1;
                 const engine = Rail.point(p,r.phase);
                 rail.sprite(c,engine,0,true,false,1);
-                targets.push({r,x:p.stop,y:p.y-10,w:27,h:14},{r,x:engine.x,y:engine.y,w:12,h:9});
+                targets.push({r,x:p.stop,y:p.y-10,w:46,h:23},{r,x:engine.x,y:engine.y,w:15,h:10});
                 r.members.forEach((w,i) => {
                     const car = rail.cars[w.id];
                     const age = Math.min(1,(now-car.born)/460);
-                    const spacing = Math.min(19,p.length/(r.members.length+2));
+                    const spacing = Math.min(25,p.length/(r.members.length+2));
                     const pt = Rail.point(p,r.phase-((i+1)*spacing+24*(1-age)*(1-age))/p.length);
                     if (car.from) {
                         const t = Math.min(1,(now-car.transfer)/620);
@@ -144,7 +178,7 @@ Rectangle {
                     }
                     car.pos = pt;
                     rail.sprite(c,pt,w.id,false,w.is_focused,age);
-                    targets.push({r,x:pt.x,y:pt.y,w:10,h:9});
+                    targets.push({r,x:pt.x,y:pt.y,w:13,h:10});
                 });
                 for (let i=0;i<8;i++) {
                     const pt=Rail.point(p,(i+.35)/8), key=r.id+"/"+i;
