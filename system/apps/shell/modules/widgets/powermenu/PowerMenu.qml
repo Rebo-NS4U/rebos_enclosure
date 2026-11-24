@@ -12,14 +12,13 @@ Item {
     signal itemSelected
 
     property int currentIndex: 0
-    readonly property bool glyphStyle: Styling.shellStyle === "glyph"
     readonly property var actions: [
-        { label: "Lock", command: [] },
-        { label: "Sleep", command: ["systemctl", "suspend"] },
-        { label: "Shut down", command: ["systemctl", "poweroff"] },
-        { label: "Reboot", command: ["systemctl", "reboot"] },
-        { label: "Log out", command: ["niri", "msg", "action", "quit", "--skip-confirmation"] },
-        { label: "Hibernate", command: ["systemctl", "hibernate"] }
+        { label: "Lock", glyph: Icons.lock, command: [] },
+        { label: "Sleep", glyph: Icons.suspend, command: ["systemctl", "suspend"] },
+        { label: "Shut down", glyph: Icons.shutdown, command: ["systemctl", "poweroff"] },
+        { label: "Reboot", glyph: Icons.reboot, command: ["systemctl", "reboot"] },
+        { label: "Log out", glyph: Icons.logout, command: ["niri", "msg", "action", "quit", "--skip-confirmation"] },
+        { label: "Hibernate", glyph: Icons.hibernate, command: ["systemctl", "hibernate"] }
     ]
 
     implicitHeight: menuColumn.implicitHeight
@@ -37,10 +36,14 @@ Item {
     Keys.onPressed: event => {
         switch (event.key) {
         case Qt.Key_Up:
+            currentIndex = (currentIndex + actions.length - actionGrid.columns) % actions.length;
+            break;
         case Qt.Key_Left:
             currentIndex = (currentIndex + actions.length - 1) % actions.length;
             break;
         case Qt.Key_Down:
+            currentIndex = (currentIndex + actionGrid.columns) % actions.length;
+            break;
         case Qt.Key_Right:
             currentIndex = (currentIndex + 1) % actions.length;
             break;
@@ -56,86 +59,66 @@ Item {
         event.accepted = true;
     }
 
-    FontLoader {
-        id: dotTypeface
-        source: root.glyphStyle ? "../../theme/fonts/Doto.ttf" : ""
-    }
-
     Column {
         id: menuColumn
         width: parent.width
-        spacing: root.glyphStyle ? 0 : Styling.spacing(8)
+        spacing: Styling.spacing(16)
 
-        Repeater {
-            model: root.actions
+        StyledText {
+            text: qsTr("Power menu")
+            font.pixelSize: Styling.fontSize(12)
+            font.bold: true
+        }
 
-            delegate: Item {
-                id: row
-                required property int index
-                required property var modelData
-                readonly property bool selected: index === root.currentIndex
+        Grid {
+            id: actionGrid
+            width: parent.width
+            columns: width >= Styling.spacing(500) ? 3 : 2
+            spacing: Styling.spacing(8)
 
-                width: menuColumn.width
-                height: root.glyphStyle ? width * (selected ? 0.16 : 0.085) : Styling.spacing(44)
+            Repeater {
+                model: root.actions
 
-                Loader {
-                    anchors.fill: parent
-                    sourceComponent: root.glyphStyle ? glyphAction : themedAction
-                }
+                delegate: ThemeButton {
+                    id: tile
+                    required property int index
+                    required property var modelData
+                    width: (actionGrid.width - (actionGrid.columns - 1) * actionGrid.spacing) / actionGrid.columns
+                    height: Styling.spacing(82)
+                    text: modelData.label
+                    highlighted: index === root.currentIndex
+                    danger: modelData.command[1] === "poweroff"
+                    focusPolicy: Qt.NoFocus
+                    onClicked: root.activate(index)
 
-                Component {
-                    id: themedAction
+                    contentItem: Column {
+                        spacing: Styling.spacing(4)
+                        topPadding: Math.max(0, (height - icon.height - label.height - spacing) / 2)
 
-                    ThemeButton {
-                        text: row.modelData.label
-                        danger: row.modelData.command[1] === "poweroff"
-                        highlighted: row.selected
-                        focusPolicy: Qt.NoFocus
-                        onClicked: root.activate(row.index)
-                    }
-                }
-
-                Component {
-                    id: glyphAction
-
-                    Item {
-                        Accessible.role: Accessible.Button
-                        Accessible.name: row.modelData.label
-                        Accessible.focused: row.selected && root.activeFocus
-                        Accessible.onPressAction: root.activate(row.index)
-
-                        Rectangle {
-                            visible: row.selected
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: row.width * 0.025
-                            height: width
-                            radius: width / 2
-                            color: "#e51e2a"
-                            antialiasing: true
+                        StyledText {
+                            id: icon
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: tile.modelData.glyph
+                            font.family: Icons.font
+                            font.pixelSize: Styling.fontSize(10)
+                            color: tile.danger && tile.background.variant !== "error" ? Colors.error : tile.background.itemColor
                         }
 
                         StyledText {
-                            anchors.left: parent.left
-                            anchors.leftMargin: row.selected ? row.width * 0.055 : 0
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: row.modelData.label.toUpperCase()
-                            font.family: dotTypeface.status === FontLoader.Ready ? dotTypeface.name : Config.theme.monoFont
-                            font.pixelSize: Math.max(1, Math.round(row.width * (row.selected ? 0.16 : 0.065)))
-                            font.variableAxes: ({ "ROND": 100, "wght": row.selected ? 800 : 500 })
-                            color: row.selected ? "#ffffff" : pointer.containsMouse ? "#cccccc" : "#858585"
-                        }
-
-                        MouseArea {
-                            id: pointer
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.activate(row.index)
+                            id: label
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: tile.text
+                            color: tile.background.itemColor
                         }
                     }
                 }
             }
+        }
+
+        StyledText {
+            text: qsTr("↑ ↓ ← →  Select     Esc  Close")
+            font.pixelSize: Styling.fontSize(-2)
+            opacity: 0.75
         }
     }
 }

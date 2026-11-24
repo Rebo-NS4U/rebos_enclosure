@@ -23,7 +23,6 @@ Item {
         }
     }
 
-    readonly property bool glyphStyle: Styling.shellStyle === "glyph"
     readonly property bool popupOpen: menuOpen
     // Keep a tiny host for Visibilities registration; real UI is powerWindow.
     width: 1
@@ -108,7 +107,11 @@ Item {
 
             Rectangle {
                 anchors.fill: parent
-                color: root.glyphStyle ? "#eb000000" : Qt.alpha(Colors.background, 0.94)
+                gradient: Gradient {
+                    GradientStop { position: 0; color: Qt.tint(Colors.background, Qt.alpha(Colors.primary, 0.17)) }
+                    GradientStop { position: 0.62; color: Qt.alpha(Colors.background, 0.95) }
+                    GradientStop { position: 1; color: Colors.background }
+                }
             }
 
             MouseArea {
@@ -116,11 +119,18 @@ Item {
                 onClicked: root.closeMenu()
             }
 
+            Rectangle {
+                anchors.fill: powerMenuView
+                anchors.margins: -Styling.spacing(22)
+                radius: Styling.radius(8)
+                color: Qt.alpha(Colors.background, 0.86)
+                border.color: Qt.alpha(Colors.outline, 0.4)
+            }
+
             PowerMenuView {
                 id: powerMenuView
                 anchors.centerIn: parent
-                width: root.glyphStyle ? Math.min(parent.width * 0.74, parent.height * 0.83)
-                    : Math.min(parent.width * 0.8, Styling.spacing(320))
+                width: Math.min(parent.width - Styling.spacing(60), Styling.spacing(600))
                 popupMode: true
                 expanded: root.menuOpen
                 onCloseRequested: root.closeMenu()
