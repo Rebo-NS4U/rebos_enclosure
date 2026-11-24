@@ -18,7 +18,7 @@ PanelWindow {
         bottom: true
     }
 
-    readonly property bool orbitActive: effectiveWallpaper === fallbackDir + "/Orbit.png"
+    readonly property bool orbitActive: effectiveWallpaper === orbitPath
         && !!GlobalStates.wallpaperManager?.orbitAccent
 
     WlrLayershell.layer: orbitActive ? WlrLayer.Bottom : WlrLayer.Background
@@ -35,7 +35,9 @@ PanelWindow {
     property var allSubdirs: []
     property int currentIndex: 0
     property string currentWallpaper: initialLoadCompleted && wallpaperPaths.length > 0 ? wallpaperPaths[currentIndex] : ""
-    readonly property var pickedAccentColors: wallpaperAdapter.wallpaperAccentColors[currentWallpaper] || ["", ""]
+    readonly property string orbitPath: fallbackDir + "/Orbit.png"
+    readonly property string paletteWallpaper: orbitSelected ? orbitPath : currentWallpaper
+    readonly property var pickedAccentColors: wallpaperAdapter.wallpaperAccentColors[paletteWallpaper] || ["", ""]
     property bool initialLoadCompleted: false
     property bool usingFallback: false
     property bool _wallpaperDirInitialized: false
@@ -46,7 +48,6 @@ PanelWindow {
     property bool paletteRefreshPending: false
     property string orbitAccent: ""
     readonly property bool orbitSelected: {
-        const orbitPath = fallbackDir + "/Orbit.png";
         return Quickshell.screens.some(output =>
             (perScreenWallpapers[output.name] || wallpaperAdapter.currentWall) === orbitPath);
     }
@@ -54,6 +55,7 @@ PanelWindow {
     onOrbitSelectedChanged: {
         if (!orbitSelected)
             orbitAccent = "";
+        Qt.callLater(refreshWallpaperPalette);
     }
     onOrbitAccentChanged: refreshWallpaperPalette()
 
@@ -117,7 +119,7 @@ PanelWindow {
     function requestDitheredWallpapers(): void {
         DitheredWallpapers.request(effectiveWallpaper);
         if (GlobalStates.wallpaperManager === wallpaper)
-            DitheredWallpapers.request(currentWallpaper);
+            DitheredWallpapers.request(paletteWallpaper);
     }
 
     function refreshDitheredTheme(): void {
@@ -133,7 +135,7 @@ PanelWindow {
         function onTintChanged() { wallpaper.refreshDitheredTheme(); }
         function onStrengthChanged() { wallpaper.refreshDitheredTheme(); }
         function onFinished(path: string) {
-            if (path === wallpaper.currentWallpaper && GlobalStates.wallpaperManager === wallpaper
+            if (path === wallpaper.paletteWallpaper && GlobalStates.wallpaperManager === wallpaper
                     && !DitheredWallpapers.waiting(path))
                 wallpaper.runMatugenForCurrentWallpaper();
         }
@@ -716,14 +718,14 @@ PanelWindow {
     }
 
     function setPickedAccentColors(colors) {
-        if (!currentWallpaper || colors.length !== 2 ||
+        if (!paletteWallpaper || colors.length !== 2 ||
                 !colors.every(color => color === "" || /^#[0-9a-fA-F]{6}$/.test(color)))
             return;
         const saved = Object.assign({}, wallpaperAdapter.wallpaperAccentColors);
         if (colors.every(color => color === ""))
-            delete saved[currentWallpaper];
+            delete saved[paletteWallpaper];
         else
-            saved[currentWallpaper] = colors.slice();
+            saved[paletteWallpaper] = colors.slice();
         wallpaperAdapter.wallpaperAccentColors = saved;
         wallpaperAdapter.activeColorPreset = "";
         Qt.callLater(() => runMatugenForCurrentWallpaper());
@@ -747,10 +749,10 @@ PanelWindow {
     function runMatugenForCurrentWallpaper() {
         if (GlobalStates.wallpaperManager !== wallpaper)
             return;
-        const liveAccent = orbitAccent;
+        const liveAccent = orbitSelected ? orbitAccent : "";
         // Only image sources need to wait for dither conversion.
-        if (!liveAccent && DitheredWallpapers.waiting(currentWallpaper)) {
-            DitheredWallpapers.request(currentWallpaper);
+        if (!liveAccent && DitheredWallpapers.waiting(paletteWallpaper)) {
+            DitheredWallpapers.request(paletteWallpaper);
             return;
         }
         // Prefer the adapter value — the bound property can lag one tick after
@@ -761,13 +763,13 @@ PanelWindow {
             return;
         }
 
-        if (liveAccent || (currentWallpaper && initialLoadCompleted)) {
+        if (liveAccent || (paletteWallpaper && (orbitSelected || initialLoadCompleted))) {
             if (paletteBusy) {
                 paletteRefreshPending = true;
                 return;
             }
             paletteError = "";
-            const matugenSource = liveAccent ? "" : getColorSource(currentWallpaper);
+            const matugenSource = liveAccent ? "" : getColorSource(paletteWallpaper);
 
             // Prefer Matugen, with Wallust as a local fallback.  This keeps
             // wallpaper-derived colors working on systems where Matugen was
@@ -780,8 +782,8 @@ PanelWindow {
                 Config.theme.lightMode ? "light" : "dark",
                 decodeURIComponent(Qt.resolvedUrl("../../../../assets/matugen/config.toml").toString().replace("file://", "")),
                 Quickshell.env("HOME") + "/.cache/rebos_shell/colors.json",
-                liveAccent || pickedAccentColors[0] || "",
-                liveAccent ? "" : pickedAccentColors[1] || ""
+                pickedAccentColors[0] || liveAccent,
+                pickedAccentColors[1] || ""
             ];
             console.log("Matugen command:", commandWithConfig.join(" "));
             matugenProcessWithConfig.command = commandWithConfig;

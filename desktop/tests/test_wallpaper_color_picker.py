@@ -222,25 +222,72 @@ const source = fs.readFileSync(process.argv[1], 'utf8');
 const start = source.indexOf('    function setPickedAccentColors(');
 const end = source.indexOf('\n    // property string mpvSocket:', start);
 const wallpaperAdapter = {wallpaperAccentColors: {}, activeColorPreset: 'preset'};
-let currentWallpaper = '/pictures/first.png', generated = 0;
+let paletteWallpaper = '/pictures/first.png', generated = 0;
 const Qt = {callLater: fn => fn()};
 function runMatugenForCurrentWallpaper() { generated++; }
 eval(source.slice(start, end));
 setPickedAccentColors(['#102030', '#405060']);
-assert.deepStrictEqual(wallpaperAdapter.wallpaperAccentColors[currentWallpaper], ['#102030', '#405060']);
+assert.deepStrictEqual(wallpaperAdapter.wallpaperAccentColors[paletteWallpaper], ['#102030', '#405060']);
 assert.strictEqual(wallpaperAdapter.activeColorPreset, '');
-currentWallpaper = '/pictures/second.png';
+paletteWallpaper = '/pictures/second.png';
 setPickedAccentColors(['#abcdef', '']);
-currentWallpaper = '/pictures/first.png';
+paletteWallpaper = '/pictures/first.png';
 setPickedAccentColors(['', '']);
-assert.strictEqual(wallpaperAdapter.wallpaperAccentColors[currentWallpaper], undefined);
+assert.strictEqual(wallpaperAdapter.wallpaperAccentColors[paletteWallpaper], undefined);
 assert.deepStrictEqual(wallpaperAdapter.wallpaperAccentColors['/pictures/second.png'], ['#abcdef', '']);
 setPickedAccentColors(['not a color', '']);
-currentWallpaper = '';
+paletteWallpaper = '';
 setPickedAccentColors(['#abcdef', '']);
 assert.strictEqual(generated, 3);
 console.log('Per-wallpaper choices and reset verified');
 '''
+        result = subprocess.run(['node', '-e', code, str(source)], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+
+    def test_orbit_palette_honors_each_pick_and_restores_live_defaults(self):
+        source = SHELL / 'modules/widgets/dashboard/wallpapers/Wallpaper.qml'
+        code = r"""
+const fs = require('fs'), assert = require('assert');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const start = source.indexOf('    function runMatugenForCurrentWallpaper()');
+const end = source.indexOf('    function updateMpvRuntime(', start);
+const wallpaper = {};
+const GlobalStates = {wallpaperManager: wallpaper};
+const orbitPath = '/wallpapers/Orbit.png';
+const currentWallpaper = '/wallpapers/static.png';
+let orbitSelected = true, orbitAccent = '#3700c2';
+let pickedAccentColors, paletteWallpaper = orbitPath;
+let initialLoadCompleted = false, paletteBusy = false, paletteError;
+const wallpaperConfig = {adapter: {}};
+const DitheredWallpapers = {waiting: () => false};
+const Config = {theme: {lightMode: false}};
+const Qt = {resolvedUrl: path => path};
+const Quickshell = {env: () => '/home/test'};
+const matugenProcessWithConfig = {};
+function getColorSource(path) { return path; }
+eval(source.slice(start, end));
+
+function check(picks, expected) {
+    pickedAccentColors = picks;
+    runMatugenForCurrentWallpaper();
+    const command = matugenProcessWithConfig.command;
+    assert.deepStrictEqual([command[2], ...command.slice(-2)], expected);
+}
+check(['', ''], ['', '#3700c2', '']);
+check(['#31bd75', ''], ['', '#31bd75', '']);
+check(['', '#bd31af'], ['', '#3700c2', '#bd31af']);
+check(['#31bd75', '#bd31af'], ['', '#31bd75', '#bd31af']);
+orbitAccent = '#aa1122';
+check(['#31bd75', '#bd31af'], ['', '#31bd75', '#bd31af']);
+check(['', ''], ['', '#aa1122', '']);
+orbitAccent = '';
+check(['', '#bd31af'], [orbitPath, '', '#bd31af']);
+orbitSelected = false;
+paletteWallpaper = currentWallpaper;
+initialLoadCompleted = true;
+check(['', '#bd31af'], [currentWallpaper, '', '#bd31af']);
+"""
         result = subprocess.run(['node', '-e', code, str(source)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 

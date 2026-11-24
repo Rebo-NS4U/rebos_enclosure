@@ -23,7 +23,7 @@ SettingsGroup {
     property var draftColors: manager?.pickedAccentColors ?? ["", ""]
     property int pickedRole: 0
     property string currentPage: ""
-    readonly property string pickerWallpaper: manager?.currentWallpaper ?? ""
+    readonly property string pickerWallpaper: manager?.paletteWallpaper ?? ""
     readonly property string pickerSource: manager && pickerWallpaper ? manager.getColorSource(pickerWallpaper) : ""
     function resetPicks() { draftColors = (manager?.pickedAccentColors ?? ["", ""]).slice(); }
     function pickColor(color) {
@@ -137,7 +137,7 @@ SettingsGroup {
             RowLayout {
                 Action {
                     text: root.busy ? "Generating…" : "Regenerate colors"
-                    enabled: root.manager !== null && !root.busy && root.preset === "" && !!root.manager.currentWallpaper
+                    enabled: root.manager !== null && !root.busy && root.preset === "" && !!root.pickerWallpaper
                     onClicked: root.manager.runMatugenForCurrentWallpaper()
                 }
                 Action {
@@ -337,7 +337,7 @@ SettingsGroup {
             }
             Action {
                 text: "Save current appearance"
-                enabled: !!root.manager && !!root.pickerWallpaper && !root.busy && !!presetName.text.trim()
+                enabled: !!root.manager && !!root.manager.currentWallpaper && !root.busy && !!presetName.text.trim()
                     && !root.manager.appearancePresets.some(entry => entry.name === presetName.text.trim())
                 onClicked: {
                     if (root.manager.saveAppearancePreset(presetName.text)) presetName.clear();
@@ -357,7 +357,7 @@ SettingsGroup {
                     RowLayout {
                         Layout.fillWidth: true
                         Action { text: "Apply"; enabled: !root.busy; onClicked: root.manager.applyAppearancePreset(savedPreset.modelData.name) }
-                        Action { text: "Replace current"; enabled: !root.busy && !!root.pickerWallpaper; onClicked: root.manager.saveAppearancePreset(savedPreset.modelData.name, true) }
+                        Action { text: "Replace current"; enabled: !root.busy && !!root.manager.currentWallpaper; onClicked: root.manager.saveAppearancePreset(savedPreset.modelData.name, true) }
                         Action { text: "Delete"; onClicked: root.manager.deleteAppearancePreset(savedPreset.modelData.name) }
                     }
                 }
